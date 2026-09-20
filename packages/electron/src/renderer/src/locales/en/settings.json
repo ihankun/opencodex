@@ -339,6 +339,8 @@
     "saveHint": "Credentials are saved in local opencode auth storage and are not shown here again.",
     "saved": "Saved. Refreshing model list.",
     "disconnect": "Disconnect",
+    "copyKeyUnavailable": "Could not read the saved key: local auth storage has no plaintext API key for this provider (OAuth logins do not expose one).",
+    "copyKeyRemoteUnsupported": "Remote runner credentials are not on this machine; only the local runner can copy a saved key.",
     "apiUnsupported": "This provider currently exposes OAuth or another auth method; API key connection is not supported in this UI yet."
   },
   "chat": {

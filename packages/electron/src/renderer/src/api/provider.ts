@@ -34,6 +34,15 @@ export async function removeProviderAuth(providerID: string): Promise<boolean> {
   return unwrap(await sdk.auth.remove({ providerID }))
 }
 
+/**
+ * 从本地 opencode auth 存储读回明文 Key（仅本地 Runner 的 api/wellknown 凭证）。
+ * 远程 Runner 的凭据不在本机，OAuth 访问令牌也会在此返回 undefined。
+ */
+export async function getProviderAuthKey(providerID: string): Promise<string | undefined> {
+  if (typeof window.customOpenCode?.providerAuthKey !== 'function') return undefined
+  return window.customOpenCode.providerAuthKey(providerID)
+}
+
 export async function authorizeProviderOAuth(
   providerID: string,
   method: number,

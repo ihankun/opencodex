@@ -369,6 +369,7 @@ export type CustomOpenCodeApi = {
   cachedSessions(serverId: string, directory?: string): Promise<CachedSessionList | undefined>
   updateCachedSessions(serverId: string, directory: string, sessions: Session[]): Promise<CachedSessionList>
   queryQuota(input: QuotaQueryInput): Promise<QuotaProviderResult[]>
+  providerAuthKey(providerID: string): Promise<string | undefined>
   openCodeGoQuotaConfig(): Promise<OpenCodeGoQuotaConfig>
   updateOpenCodeGoQuotaConfig(input: OpenCodeGoQuotaConfigUpdate): Promise<OpenCodeGoQuotaConfig>
   waitConsoleLogin(login: CustomOpenCodeConsoleLoginStart): Promise<CustomOpenCodeConsoleLoginResult>
@@ -498,6 +499,7 @@ const api: CustomOpenCodeApi = {
   cachedSessions: (serverId, directory) => ipcRenderer.invoke("session-list-cache:get", serverId, directory),
   updateCachedSessions: (serverId, directory, sessions) => ipcRenderer.invoke("session-list-cache:set", serverId, directory, sessions),
   queryQuota: (input) => ipcRenderer.invoke("quota:query", input),
+  providerAuthKey: (providerID) => ipcRenderer.invoke("provider-auth:key", providerID),
   openCodeGoQuotaConfig: () => ipcRenderer.invoke("quota:opencode-go-config"),
   updateOpenCodeGoQuotaConfig: (input) => ipcRenderer.invoke("quota:opencode-go-config-set", input),
   waitConsoleLogin: (login) => ipcRenderer.invoke("console:login-wait", login),

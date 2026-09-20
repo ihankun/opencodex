@@ -63,6 +63,7 @@ import {
 } from "./notificationDatabase"
 import { registerDesktopPreferencesIpc } from "./ipc/preferences"
 import { registerProjectsIpc } from "./ipc/projects"
+import { registerProviderAuthIpc } from "./ipc/providerAuth"
 import { registerQuotaIpc } from "./ipc/quota"
 import { registerRendererSettingsIpc } from "./ipc/rendererSettings"
 import { registerSecurityIpc } from "./ipc/security"
@@ -646,6 +647,10 @@ registerProjectsIpc({
   assertSender: assertMainWindow,
   projects: projectsStore,
   sessionListCache: sessionListCacheStore,
+})
+registerProviderAuthIpc({
+  assertSender: assertMainWindow,
+  userDataPath: app.getPath("userData"),
 })
 registerQuotaIpc({
   assertSender: assertMainWindow,

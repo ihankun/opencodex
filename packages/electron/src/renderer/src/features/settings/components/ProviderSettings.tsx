@@ -1,16 +1,19 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
   disposeInstance,
+  getProviderAuthKey,
   getProviderAuthMethods,
   getProviders,
   removeProviderAuth,
   setProviderAuth,
   type ProviderListResult,
 } from '../../../api'
-import { KeyIcon, RetryIcon, SearchIcon, TrashIcon } from '../../../components/Icons'
+import { CheckIcon, CopyIcon, KeyIcon, RetryIcon, SearchIcon, TrashIcon } from '../../../components/Icons'
 import { Button } from '../../../components/ui/Button'
 import { refreshModels } from '../../../hooks/useModels'
+import { useServerStore } from '../../../hooks'
+import { clipboardErrorHandler, copyTextToClipboard } from '../../../utils'
 import { settingsSearchInputClass, SettingsCard, SettingsSection, Toggle } from './SettingsUI'
 import type { Provider, ProviderAuthMethod } from '@opencode-ai/sdk/v2/client'
 
@@ -38,6 +41,8 @@ function promptDefaultValue(prompt: AuthPrompt) {
 
 export function ProviderSettings() {
   const { t } = useTranslation(['settings', 'common'])
+  const { activeServer } = useServerStore()
+  const localServer = !activeServer || activeServer.id === 'local'
   const [query, setQuery] = useState('')
   const [configuredOnly, setConfiguredOnly] = useState(false)
   const [providersResult, setProvidersResult] = useState<ProviderListResult | null>(null)
@@ -48,6 +53,14 @@ export function ProviderSettings() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [savedProvider, setSavedProvider] = useState<string | null>(null)
+  const [copiedProvider, setCopiedProvider] = useState<string | null>(null)
+  const copiedTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  useEffect(() => {
+    return () => {
+      if (copiedTimerRef.current) clearTimeout(copiedTimerRef.current)
+    }
+  }, [])
 
   const load = async () => {
     setLoading(true)
@@ -120,6 +133,7 @@ export function ProviderSettings() {
     setBusyProvider(provider.id)
     setError(null)
     setSavedProvider(null)
+    setCopiedProvider(null)
     try {
       await setProviderAuth(provider.id, {
         type: 'api',
@@ -138,10 +152,28 @@ export function ProviderSettings() {
     }
   }
 
+  const copyKey = async (provider: Provider) => {
+    setError(null)
+    try {
+      const key = await getProviderAuthKey(provider.id)
+      if (!key) {
+        setError(t('providers.copyKeyUnavailable'))
+        return
+      }
+      await copyTextToClipboard(key)
+      setCopiedProvider(provider.id)
+      if (copiedTimerRef.current) clearTimeout(copiedTimerRef.current)
+      copiedTimerRef.current = setTimeout(() => setCopiedProvider(null), 2000)
+    } catch (err) {
+      clipboardErrorHandler('copy provider api key', err)
+    }
+  }
+
   const disconnect = async (provider: Provider) => {
     setBusyProvider(provider.id)
     setError(null)
     setSavedProvider(null)
+    setCopiedProvider(null)
     try {
       await removeProviderAuth(provider.id)
       await disposeInstance()
@@ -249,6 +281,7 @@ export function ProviderSettings() {
                               setApiKeys(current => ({ ...current, [provider.id]: event.target.value }))
                               setError(null)
                               setSavedProvider(null)
+                              setCopiedProvider(null)
                             }}
                             placeholder={isConnected ? t('providers.apiKeyConnectedPlaceholder') : t('providers.apiKeyPlaceholder')}
                             className="h-9 min-w-0 flex-1 bg-transparent text-[length:var(--fs-md)] text-text-100 outline-none placeholder:text-text-400 focus-visible:outline-none"
@@ -302,17 +335,30 @@ export function ProviderSettings() {
                         </div>
                         <div className="flex shrink-0 items-center gap-2">
                           {isConnected && (
-                            <Button
-                              type="button"
-                              variant="ghost"
-                              size="sm"
-                              isLoading={busy}
-                              onClick={() => void disconnect(provider)}
-                              className="text-danger-100 hover:text-danger-100"
-                            >
-                              <TrashIcon size={13} />
-                              {t('providers.disconnect')}
-                            </Button>
+                            <>
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                isLoading={busy}
+                                onClick={() => void disconnect(provider)}
+                                className="text-danger-100 hover:text-danger-100"
+                              >
+                                <TrashIcon size={13} />
+                                {t('providers.disconnect')}
+                              </Button>
+                              <Button
+                                type="button"
+                                variant="secondary"
+                                size="sm"
+                                disabled={!localServer}
+                                title={!localServer ? t('providers.copyKeyRemoteUnsupported') : undefined}
+                                onClick={() => void copyKey(provider)}
+                              >
+                                {copiedProvider === provider.id ? <CheckIcon size={13} /> : <CopyIcon size={13} />}
+                                {copiedProvider === provider.id ? t('common:copied') : t('common:copy')}
+                              </Button>
+                            </>
                           )}
                           <Button type="button" size="sm" isLoading={busy} onClick={() => void save(provider)}>
                             {t('common:save')}

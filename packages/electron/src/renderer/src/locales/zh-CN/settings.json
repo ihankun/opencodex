@@ -339,6 +339,8 @@
     "saveHint": "凭证会保存到本地 opencode auth 存储，不会在这里回显。",
     "saved": "已保存，模型列表正在刷新。",
     "disconnect": "断开",
+    "copyKeyUnavailable": "无法读取已保存的 Key：本地 auth 存储中没有该供应商的明文 API Key（OAuth 登录不提供明文）。",
+    "copyKeyRemoteUnsupported": "远程 Runner 的凭据不在本机，只有本地 Runner 才能复制已保存的 Key。",
     "apiUnsupported": "该供应商当前只提供 OAuth 或其他认证方式，前台 API Key 连接暂未支持。"
   },
   "chat": {
