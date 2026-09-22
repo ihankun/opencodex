@@ -8,6 +8,10 @@ const cacheDir = join(__dirname, "..", ".models-cache")
 const cacheFile = join(cacheDir, "api.json")
 
 const opencodeDir = join(__dirname, "..", "..", "opencode")
+const opencodePkg = JSON.parse(readFileSync(join(opencodeDir, "package.json"), "utf8")) as Record<
+  string,
+  Record<string, string>
+> & { version: string }
 const testFixture = join(opencodeDir, "test", "tool", "fixtures", "models-api.json")
 const serverDistFile = join(opencodeDir, "dist", "node", "node.js")
 
@@ -26,10 +30,6 @@ function serverDistUpToDate(): boolean {
   if (existsSync(join(opencodeDir, "src"))) scanDirs.push(join(opencodeDir, "src"))
   if (existsSync(join(opencodeDir, "script"))) scanDirs.push(join(opencodeDir, "script"))
   if (existsSync(join(opencodeDir, "test"))) scanDirs.push(join(opencodeDir, "test"))
-  const opencodePkg = JSON.parse(readFileSync(join(opencodeDir, "package.json"), "utf8")) as Record<
-    string,
-    Record<string, string>
-  >
   for (const section of ["dependencies", "devDependencies", "optionalDependencies"]) {
     for (const name of Object.keys(opencodePkg[section] ?? {})) {
       if (!name.startsWith("@opencode-ai/")) continue
@@ -97,5 +97,8 @@ const forceServerBuild = process.env.OPENCODEX_FORCE_SERVER_BUILD === "1"
 if (!forceServerBuild && serverDistUpToDate()) {
   console.log("build-server: skip (dist/node/node.js is up to date)")
 } else {
-  await $`cd ../opencode && OPENCODE_CHANNEL=opencodex bun script/build-node.ts`
+  // 注入真实语义化版本：opencode 服务端会用它构造 User-Agent（如 opencode/1.18.31）。
+  // 只传 OPENCODE_CHANNEL=opencodex 会让版本退化为 0.0.0-opencodex-<时间戳>，从而被
+  // Console 免费额度接口以“OpenCode 1.18.0 or newer is required”拒绝。
+  await $`cd ../opencode && OPENCODE_CHANNEL=opencodex OPENCODE_VERSION=${opencodePkg.version} bun script/build-node.ts`
 }
