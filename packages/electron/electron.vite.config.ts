@@ -3,7 +3,7 @@ import { mkdir, readdir, readFile, writeFile } from "node:fs/promises"
 import react from "@vitejs/plugin-react"
 import tailwindcss from "@tailwindcss/vite"
 import packageJson from "./package.json" with { type: "json" }
-import opencodePackageJson from "../opencode/package.json" with { type: "json" }
+import opencodePackageJson from "../cli/package.json" with { type: "json" }
 
 const OPENCODE_SERVER_DIST = "../opencode/dist/node"
 const nodePtyPkg = `@lydell/node-pty-${process.platform}-${process.arch}`
@@ -19,7 +19,7 @@ export default defineConfig({
         },
       },
       externalizeDeps: {
-        exclude: ["@opencode-ai/sdk"],
+        exclude: ["@opencode/client"],
         include: [nodePtyPkg],
       },
     },

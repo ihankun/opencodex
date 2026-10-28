@@ -59,6 +59,13 @@
 4. **自定义接口**：renderer 调用的 goal / hooks / security / memory / subrepos / provider catalog 等端点在 V2 服务端尚不存在，需要先完成上表的服务端迁移。
 5. **验证命令**：`bun --cwd packages/electron verify`、`bun electron:build`。
 
+## 当前状态
+
+- 合并提交：`chore: merge upstream dev (OpenCode V2)`。
+- `util`、`schema`、`protocol`、`core`、`server`、`client`、`sdk`、`cli` 使用 `bun check --no-script` 全部通过。
+- `packages/electron` 目前有约 414 个类型错误，集中在 renderer 的 API 封装、事件/消息类型和聊天组件；main 进程只有少量与旧服务端路径相关的错误。
+- `bun --cwd packages/electron typecheck` 已切换为 `bun check --no-script`，与 V2 工具链一致。
+
 ## 工具链
 
 - 安装依赖：`bun install`（建议使用 bun 1.4.4）

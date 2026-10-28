@@ -6,7 +6,7 @@
   "license": "GPL-3.0-only",
   "main": "./out/main/index.js",
   "scripts": {
-    "typecheck": "tsc --noEmit",
+    "typecheck": "bun check --no-script",
     "test": "bun test src/renderer && node --test src/main/*.test.ts",
     "test:e2e": "playwright test",
     "verify": "bun run typecheck && bun run test",
