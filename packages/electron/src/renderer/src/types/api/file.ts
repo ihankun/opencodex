@@ -4,7 +4,7 @@ import type {
   FileNode as SDKFileNode,
   SnapshotFileDiff as SDKSnapshotFileDiff,
   Symbol as SDKSymbol,
-} from '@opencode-ai/sdk/v2/client'
+} from '@opencode/client'
 
 export type FileNodeType = SDKFileNode['type']
 

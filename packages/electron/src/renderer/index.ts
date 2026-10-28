@@ -1,5 +1,5 @@
-import { createOpencodeClient } from "@opencode-ai/sdk/v2/client"
-import type { Event, Message, Model, Part, Provider } from "@opencode-ai/sdk/v2/client"
+import { OpenCode } from "@opencode/client"
+import type { Event, Message, Model, Part, Provider } from "@opencode/client"
 import "./styles.css"
 
 type ServerInfo = {
@@ -33,7 +33,7 @@ const modelMenu = document.querySelector<HTMLDivElement>("#model-menu")
 const conversation = document.querySelector<HTMLElement>("#conversation")
 
 let server: ServerInfo | undefined
-let client: ReturnType<typeof createOpencodeClient> | undefined
+let client: ReturnType<typeof OpenCode.make> | undefined
 let sessionID: string | undefined
 let sending = false
 let eventsStarted = false
@@ -55,7 +55,7 @@ async function renderServerStatus() {
   }
 
   server = state.server
-  client = createOpencodeClient({
+  client = OpenCode.make({
     baseUrl: server.url,
     headers: authHeaders(server),
     throwOnError: true,

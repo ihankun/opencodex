@@ -2,7 +2,7 @@ import type {
   Path as SDKPath,
   Project as SDKProject,
   ProjectUpdateData as SDKProjectUpdateData,
-} from '@opencode-ai/sdk/v2/client'
+} from '@opencode/client'
 
 export type Project = SDKProject
 

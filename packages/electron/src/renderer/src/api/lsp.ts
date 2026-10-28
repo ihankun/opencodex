@@ -2,7 +2,7 @@
 // LSP API - Language Server Protocol 状态
 // ============================================
 
-import type { FormatterStatus as SDKFormatterStatus, LspStatus as SDKLspStatus } from '@opencode-ai/sdk/v2/client'
+import type { FormatterStatus as SDKFormatterStatus, LspStatus as SDKLspStatus } from '@opencode/client'
 import { getSDKClient, unwrap } from './sdk'
 import { formatPathForApi } from '../utils/directoryUtils'
 

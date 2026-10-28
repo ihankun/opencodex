@@ -2,7 +2,7 @@ import type {
   ToolIds as SDKToolIds,
   ToolList as SDKToolList,
   ToolListItem as SDKToolListItem,
-} from '@opencode-ai/sdk/v2/client'
+} from '@opencode/client'
 
 export type ToolIDs = SDKToolIds
 

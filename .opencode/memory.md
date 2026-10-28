@@ -1,0 +1,2 @@
+1、当前项目为从opencode项目fork的，主要改动在packages/electron包下，旨在打造好用的opencode前端项目；
+2、之后的修改除非特殊说明，否则一律默认在electron包下修改，且需要注意因为之后需要将主版本代码合并过来，所以修改electron之外的代码需要尽量使用减少冲突的写法。

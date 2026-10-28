@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState, type FormEvent } from 'react'
 import { useTranslation } from 'react-i18next'
-import type { Provider, ProviderAuthAuthorization, ProviderAuthMethod } from '@opencode-ai/sdk/v2/client'
+import type { Provider, ProviderAuthAuthorization, ProviderAuthMethod } from '@opencode/client'
 import {
   authorizeProviderOAuth,
   completeProviderOAuth,

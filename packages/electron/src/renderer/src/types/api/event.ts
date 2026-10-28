@@ -18,7 +18,7 @@ import type {
   EventWorktreeReady as SDKEventWorktreeReady,
   GlobalEvent as SDKGlobalEvent,
   Todo as SDKTodo,
-} from '@opencode-ai/sdk/v2/client'
+} from '@opencode/client'
 import type { Session } from './session'
 import type { Message, Part } from './message'
 import type { PermissionRequest, QuestionRequest } from './permission'

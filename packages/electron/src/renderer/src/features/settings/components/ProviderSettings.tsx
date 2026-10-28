@@ -15,7 +15,7 @@ import { refreshModels } from '../../../hooks/useModels'
 import { useServerStore } from '../../../hooks'
 import { clipboardErrorHandler, copyTextToClipboard } from '../../../utils'
 import { settingsSearchInputClass, SettingsCard, SettingsSection, Toggle } from './SettingsUI'
-import type { Provider, ProviderAuthMethod } from '@opencode-ai/sdk/v2/client'
+import type { Provider, ProviderAuthMethod } from '@opencode/client'
 
 type AuthPrompt = NonNullable<ProviderAuthMethod['prompts']>[number]
 

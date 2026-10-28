@@ -10,8 +10,8 @@
 <p align="center">开源的 AI Coding Agent 桌面端。</p>
 <p align="center">
   <a href="https://opencode.ai/discord"><img alt="Discord" src="https://img.shields.io/discord/1391832426048651334?style=flat-square&label=discord" /></a>
-  <a href="https://www.npmjs.com/package/opencode-ai"><img alt="npm" src="https://img.shields.io/npm/v/opencode-ai?style=flat-square" /></a>
-  <a href="https://github.com/anomalyco/opencode/actions/workflows/publish.yml"><img alt="Build status" src="https://img.shields.io/github/actions/workflow/status/anomalyco/opencode/publish.yml?style=flat-square&branch=dev" /></a>
+  <a href="https://www.npmjs.com/package/@opencode/cli"><img alt="npm" src="https://img.shields.io/npm/v/@opencode/cli?style=flat-square" /></a>
+  <a href="https://github.com/anomalyco/opencode/actions/workflows/release.yml"><img alt="Build status" src="https://img.shields.io/github/actions/workflow/status/anomalyco/opencode/release.yml?style=flat-square&branch=dev" /></a>
 </p>
 
 
@@ -24,7 +24,7 @@
 #### 1、源码打包
 ```bash
 # clone源码
-git clone https://github.com/ihankun/opencodex.git           # 使用 electron 分支
+git clone https://github.com/ihankun/opencodex.git           # 使用 electron-v2 分支
 
 # 安装依赖
 bun install
@@ -36,10 +36,10 @@ bun run electron:dev
 # mac打包
 bun run electron:package
 # win打包
-bun run electron:win
+bun run electron:package:win
 ```
 > [!TIP]
-> dev 分支为fork的原版opencode代码分支。
+> dev 分支为fork的原版opencode（V2）代码分支，electron-v2 为基于 V2 的桌面端开发分支。
 
 #### 2、桌面应用程序
 可直接从[发布页](https://github.com/ihankun/opencodex/releases)下载。
@@ -56,11 +56,11 @@ OpenCode 内置两种 Agent，可用 `Tab` 键快速切换：
 
 另外还包含一个 **general** 子 Agent，用于复杂搜索和多步任务，内部使用，也可在消息中输入 `@general` 调用。
 
-了解更多 [Agents](https://opencode.ai/docs/agents) 相关信息。
+了解更多 [Agents](https://opencode.ai/v2/docs/agents) 相关信息。
 
 ### 文档
 
-更多配置说明请查看我们的 [**官方文档**](https://opencode.ai/docs)。
+更多配置说明请查看我们的 [**官方文档**](https://opencode.ai/v2/docs)。
 
 ### 参与贡献
 

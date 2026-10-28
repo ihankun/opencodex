@@ -5,7 +5,7 @@ import type {
   SessionListData as SDKSessionListData,
   SessionStatus as SDKSessionStatus,
   SessionUpdateData as SDKSessionUpdateData,
-} from '@opencode-ai/sdk/v2/client'
+} from '@opencode/client'
 
 export type SessionStatus = SDKSessionStatus
 

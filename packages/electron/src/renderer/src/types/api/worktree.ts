@@ -3,7 +3,7 @@ import type {
   WorktreeCreateInput as SDKWorktreeCreateInput,
   WorktreeRemoveInput as SDKWorktreeRemoveInput,
   WorktreeResetInput as SDKWorktreeResetInput,
-} from '@opencode-ai/sdk/v2/client'
+} from '@opencode/client'
 
 export type Worktree = SDKWorktree
 

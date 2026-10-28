@@ -4,7 +4,7 @@ import type {
   Provider as SDKProvider,
   ProviderAuthAuthorization as SDKProviderAuthAuthorization,
   ProviderAuthMethod as SDKProviderAuthMethod,
-} from '@opencode-ai/sdk/v2/client'
+} from '@opencode/client'
 
 export type ModelIOCapabilities = SDKModel['capabilities']['input']
 

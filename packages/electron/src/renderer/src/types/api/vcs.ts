@@ -1,4 +1,4 @@
-import type { VcsDiffData as SDKVcsDiffData, VcsInfo as SDKVcsInfo } from '@opencode-ai/sdk/v2/client'
+import type { VcsDiffData as SDKVcsDiffData, VcsInfo as SDKVcsInfo } from '@opencode/client'
 
 export type VcsInfo = SDKVcsInfo
 

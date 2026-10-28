@@ -4,7 +4,7 @@ import type {
   MessageOutputLengthError as SDKMessageOutputLengthError,
   ProviderAuthError as SDKProviderAuthError,
   UnknownError as SDKUnknownError,
-} from '@opencode-ai/sdk/v2/client'
+} from '@opencode/client'
 
 export interface ErrorInfo {
   name: string

@@ -19,7 +19,7 @@ import type {
   ToolPart as SDKToolPart,
   ToolState as SDKToolState,
   UserMessage as SDKUserMessage,
-} from '@opencode-ai/sdk/v2/client'
+} from '@opencode/client'
 
 export type MessageSummary = NonNullable<SDKUserMessage['summary']>
 

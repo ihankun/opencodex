@@ -1,20 +1,8 @@
-import { Skill } from "@opencode-ai/schema/skill"
-import { SkillMarketplace } from "@opencode-ai/schema/skill-marketplace"
-import { Location } from "@opencode-ai/schema/location"
+import { Skill } from "@opencode/schema/skill"
+import { Location } from "@opencode/schema/location"
 import { Schema } from "effect"
-import { HttpApiEndpoint, HttpApiGroup, HttpApiSchema, OpenApi } from "effect/unstable/httpapi"
-import { LocationQuery, locationQueryOpenApi } from "./location"
-
-export class SkillMarketplaceError extends Schema.ErrorClass<SkillMarketplaceError>("SkillMarketplaceError")(
-  {
-    name: Schema.Literal("SkillMarketplaceError"),
-    data: Schema.Struct({
-      message: Schema.String,
-      conflict: Schema.Boolean.pipe(Schema.optional),
-    }),
-  },
-  { httpApiStatus: 400 },
-) {}
+import { HttpApiEndpoint, HttpApiGroup, OpenApi } from "effect/http-api"
+import { LocationQuery, locationQueryOpenApi } from "./location.js"
 
 export const SkillGroup = HttpApiGroup.make("server.skill")
   .add(
@@ -25,60 +13,15 @@ export const SkillGroup = HttpApiGroup.make("server.skill")
       .annotateMerge(locationQueryOpenApi)
       .annotateMerge(
         OpenApi.annotations({
-          identifier: "v2.skill.list",
+          identifier: "skill.list",
           summary: "List skills",
           description: "Retrieve currently registered skills.",
         }),
       ),
   )
-  .add(
-    HttpApiEndpoint.get("skill.marketplaceSearch", "/api/skill/marketplace/search", {
-      query: Schema.Struct({
-        ...LocationQuery.fields,
-        q: Schema.String,
-        provider: SkillMarketplace.Provider,
-        sort: SkillMarketplace.Sort.pipe(Schema.optional),
-        category: Schema.String.pipe(Schema.optional),
-        limit: Schema.NumberFromString.pipe(Schema.optional),
-        page: Schema.NumberFromString.pipe(Schema.optional),
-      }),
-      success: Location.response(SkillMarketplace.Page),
-      error: SkillMarketplaceError,
-    }).annotateMerge(locationQueryOpenApi),
-  )
-  .add(
-    HttpApiEndpoint.get("skill.marketplaceDetail", "/api/skill/marketplace/detail", {
-      query: Schema.Struct({ ...LocationQuery.fields, id: Schema.String, provider: SkillMarketplace.Provider }),
-      success: Location.response(SkillMarketplace.Detail),
-      error: SkillMarketplaceError,
-    }).annotateMerge(locationQueryOpenApi),
-  )
-  .add(
-    HttpApiEndpoint.get("skill.marketplaceInstalled", "/api/skill/marketplace/installed", {
-      query: LocationQuery,
-      success: Location.response(Schema.Array(SkillMarketplace.Installation)),
-      error: SkillMarketplaceError,
-    }).annotateMerge(locationQueryOpenApi),
-  )
-  .add(
-    HttpApiEndpoint.post("skill.marketplaceInstall", "/api/skill/marketplace/install", {
-      query: LocationQuery,
-      payload: SkillMarketplace.InstallInput,
-      success: Location.response(SkillMarketplace.Installation),
-      error: SkillMarketplaceError,
-    }).annotateMerge(locationQueryOpenApi),
-  )
-  .add(
-    HttpApiEndpoint.delete("skill.marketplaceRemove", "/api/skill/marketplace/install", {
-      query: LocationQuery,
-      payload: SkillMarketplace.RemoveInput,
-      success: HttpApiSchema.NoContent,
-      error: SkillMarketplaceError,
-    }).annotateMerge(locationQueryOpenApi),
-  )
   .annotateMerge(
     OpenApi.annotations({
-      title: "skills",
+      title: "skill",
       description: "Experimental skill routes.",
     }),
   )

@@ -7,7 +7,7 @@ import { uiErrorHandler } from '../../../utils'
 import { desktopPreferencesStore, useDesktopPreferences } from '../../../store/desktopPreferencesStore'
 import { SettingsSection, Toggle } from './SettingsUI'
 import { canonicalQuotaProviderId, supportsQuotaProvider, type OpenCodeGoQuotaConfig } from '../../../../../shared/quota'
-import type { Provider } from '@opencode-ai/sdk/v2/client'
+import type { Provider } from '@opencode/client'
 
 export function QuotaSettings() {
   const { t } = useTranslation(['settings'])

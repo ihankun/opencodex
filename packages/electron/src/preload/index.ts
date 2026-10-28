@@ -18,7 +18,7 @@ import type { ProjectDirectory, ProjectState } from "../shared/projects"
 import type { CachedSessionList } from "../shared/sessionListCache"
 import type { CustomOpenCodeDeepLink } from "../shared/deepLinks"
 import type { UpdaterState } from "../shared/updater"
-import type { Session } from "@opencode-ai/sdk/v2/client"
+import type { Session } from "@opencode/client"
 
 export type { ImBridgeConfig, ImBridgeState } from "../shared/imBridge"
 export type { CustomOpenCodeDeepLink } from "../shared/deepLinks"

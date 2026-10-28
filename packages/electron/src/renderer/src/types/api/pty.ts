@@ -2,7 +2,7 @@ import type {
   Pty as SDKPty,
   PtyCreateData as SDKPtyCreateData,
   PtyUpdateData as SDKPtyUpdateData,
-} from '@opencode-ai/sdk/v2/client'
+} from '@opencode/client'
 
 export type PtySize = NonNullable<NonNullable<SDKPtyUpdateData['body']>['size']>
 
