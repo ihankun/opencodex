@@ -7,6 +7,8 @@ import type { EffectDrizzleSqlite } from "./drizzle.js"
 import { migrations } from "./migration.gen.js"
 import schema from "./schema.gen.js"
 import { Global } from "@opencode/util/global"
+import path from "node:path"
+import { importLegacyCredentials } from "./legacy-credentials.js"
 
 type Database = EffectDrizzleSqlite.EffectSQLiteDatabase
 type Transaction = Parameters<Parameters<Database["transaction"]>[0]>[0]
@@ -21,6 +23,7 @@ export type Migration = {
 // it is bootstrapping, since two instances over one file must not race.
 export function apply(db: Database) {
   return Effect.gen(function* () {
+    const global = yield* Global.Service
     // OpenCode owns the unprefixed table namespace. Embedders sharing this
     // database may own underscore-prefixed tables, which bootstrap ignores.
     const tables = yield* db.all<{ name: string }>(
@@ -34,6 +37,7 @@ export function apply(db: Database) {
     yield* db.transaction((tx) =>
       Effect.gen(function* () {
         yield* schema.up(tx)
+        yield* importLegacyCredentials(tx, path.join(global.data, "auth.json"))
         yield* tx.run(
           sql`CREATE TABLE ${sql.identifier("migration")} (id TEXT PRIMARY KEY, time_completed INTEGER NOT NULL)`,
         )
@@ -53,6 +57,7 @@ export function apply(db: Database) {
 
 export function applyOnly(db: Database, input: Migration[]) {
   return Effect.gen(function* () {
+    const global = yield* Global.Service
     yield* db.run(
       sql`CREATE TABLE IF NOT EXISTS ${sql.identifier("migration")} (id TEXT PRIMARY KEY, time_completed INTEGER NOT NULL)`,
     )
@@ -145,5 +150,8 @@ export function applyOnly(db: Database, input: Migration[]) {
         durationMs: Date.now() - started,
       })
     }
+    // Fresh databases never run data migrations, so backfill legacy credentials on
+    // every boot. The import skips integrations that already have a credential.
+    yield* db.transaction((tx) => importLegacyCredentials(tx, path.join(global.data, "auth.json")))
   })
 }
