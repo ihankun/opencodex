@@ -71,6 +71,9 @@ const mergeConfig = (entries: Array<{ type: string; info?: Json }>): Config =>
 
 const toLocation = (directory?: string): Location => (directory ? { location: { directory } } : {})
 
+const directoryQuery = (directory?: unknown): string =>
+  typeof directory === "string" && directory ? `?${new URLSearchParams({ directory }).toString()}` : 
+
 function bytesToBase64(bytes: Uint8Array): string {
   let binary = ""
   const chunk = 0x8000
@@ -473,7 +476,7 @@ export function makeLegacyClient(options: LegacyClientOptions) {
         return { data: mergeConfig(entries as never) }
       },
       update: async (input: Json = {}) => {
-        await options.requestJson("/experimental/config", {
+        await options.requestJson(`/experimental/config${input.directory ? directoryQuery(input.directory) : "?global=true"}`, {
           method: "PATCH",
           body: JSON.stringify({
             ...(input.config as Json),
@@ -563,7 +566,7 @@ export function makeLegacyClient(options: LegacyClientOptions) {
       subrepos: async (input: Json = {}) => {
         const directory = (input.directory as string | undefined) ?? ""
         const result = await options.requestJson<{ repos?: Array<{ worktree: string }> }>(
-          `/project/subrepos?${new URLSearchParams({ directory }).toString()}`,
+          `/project/subrepos${directoryQuery(directory)}`,
         )
         return { data: { directory, repos: result.repos ?? [] } }
       },
@@ -580,7 +583,7 @@ export function makeLegacyClient(options: LegacyClientOptions) {
     provider: {
       list: providerList,
       refresh: async (input: Json = {}) => {
-        await options.requestJson("/provider/refresh", {
+        await options.requestJson(`/provider/refresh${directoryQuery(input.directory)}`, {
           method: "POST",
           body: JSON.stringify({ directory: input.directory }),
         })
@@ -908,7 +911,7 @@ export function makeLegacyClient(options: LegacyClientOptions) {
           }
         },
         switch: async (input: Json) => {
-          const result = await options.requestJson<{ branch: string }>("/vcs/branch", {
+          const result = await options.requestJson<{ branch: string }>(`/vcs/branch${directoryQuery(input.directory)}`, {
             method: "POST",
             body: JSON.stringify({ branch: input.branch, directory: input.directory }),
           })
@@ -923,42 +926,42 @@ export function makeLegacyClient(options: LegacyClientOptions) {
         return { data: result.data as unknown as SnapshotFileDiff[] }
       },
       stage: async (input: Json) => {
-        const result = await options.requestJson<{ output: string }>("/vcs/stage", {
+        const result = await options.requestJson<{ output: string }>(`/vcs/stage${directoryQuery(input.directory)}`, {
           method: "POST",
           body: JSON.stringify({ files: input.files, directory: input.directory }),
         })
         return { data: result }
       },
       unstage: async (input: Json) => {
-        const result = await options.requestJson<{ output: string }>("/vcs/unstage", {
+        const result = await options.requestJson<{ output: string }>(`/vcs/unstage${directoryQuery(input.directory)}`, {
           method: "POST",
           body: JSON.stringify({ files: input.files, directory: input.directory }),
         })
         return { data: result }
       },
       discard: async (input: Json) => {
-        const result = await options.requestJson<{ output: string }>("/vcs/discard", {
+        const result = await options.requestJson<{ output: string }>(`/vcs/discard${directoryQuery(input.directory)}`, {
           method: "POST",
           body: JSON.stringify({ files: input.files, directory: input.directory }),
         })
         return { data: result }
       },
       commit: async (input: Json) => {
-        const result = await options.requestJson<{ output: string }>("/vcs/commit", {
+        const result = await options.requestJson<{ output: string }>(`/vcs/commit${directoryQuery(input.directory)}`, {
           method: "POST",
           body: JSON.stringify({ message: input.message, directory: input.directory }),
         })
         return { data: result }
       },
       push: async (input: Json) => {
-        const result = await options.requestJson<{ output: string }>("/vcs/push", {
+        const result = await options.requestJson<{ output: string }>(`/vcs/push${directoryQuery(input.directory)}`, {
           method: "POST",
           body: JSON.stringify({ directory: input.directory }),
         })
         return { data: result }
       },
       operation: async (input: Json) => {
-        const result = await options.requestJson<{ output: string }>("/vcs/operation", {
+        const result = await options.requestJson<{ output: string }>(`/vcs/operation${directoryQuery(input.directory)}`, {
           method: "POST",
           body: JSON.stringify({ action: input.action, argument: input.argument, directory: input.directory }),
         })
@@ -1007,7 +1010,7 @@ export function makeLegacyClient(options: LegacyClientOptions) {
         return { data: true }
       },
       reset: async (input: Json = {}) => {
-        await options.requestJson("/experimental/worktree/reset", {
+        await options.requestJson(`/experimental/worktree/reset${directoryQuery(input.directory)}`, {
           method: "POST",
           body: JSON.stringify({
             directory: input.directory,
@@ -1039,13 +1042,10 @@ export function makeLegacyClient(options: LegacyClientOptions) {
       },
       controlPlane: {
         moveSession: async (input: Json) => {
-          await options.requestJson("/experimental/control-plane/move-session", {
-            method: "POST",
-            body: JSON.stringify({
-              sessionID: input.sessionID,
-              destination: input.destination,
-              moveChanges: input.moveChanges,
-            }),
+          const destination = input.destination as Json | undefined
+          await v2.session.move({
+            sessionID: input.sessionID as string,
+            directory: String(destination?.directory ?? ""),
           })
           return { data: true }
         },

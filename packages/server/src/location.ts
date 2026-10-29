@@ -72,6 +72,7 @@ export function requestRef(request: HttpServerRequest.HttpServerRequest): Locati
   const query = new URL(request.url, "http://localhost").searchParams
   const directory =
     query.get("location[directory]") ||
+    query.get("directory") ||
     (request.headers["x-opencode-directory"] ? decode(request.headers["x-opencode-directory"]) : process.cwd())
   return Location.Ref.make({
     directory: AbsolutePath.make(directory),
