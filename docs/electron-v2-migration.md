@@ -71,6 +71,7 @@
 - CLI Web UI 包装层会转发 `/experimental/*`、`/vcs/*`、`/project/subrepos`、`/provider/refresh` 到 API，避免 fork 路由被 SPA 吞掉。
 - IM bridge 的 SDK 调用迁移到 `@opencode/client`，SSE 复用同一套事件投影。
 - Electron 预览启动 smoke test 通过：窗口加载、V2 sidecar ready、renderer 鉴权正常（未出现 Unauthorized / 模型拉取失败）。
+- 修复新库跳过数据迁移导致 V1 `auth.json` 未导入的问题：现在新建或已有的 V2 库都会在启动时补齐 legacy credentials，`opencode-go` 等已登录 provider 会正常出现。
 
 仍需补齐：
 
