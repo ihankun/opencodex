@@ -35,7 +35,8 @@
     "@opencode/simulation": "workspace:*",
     "@opencode/util": "workspace:*",
     "effect": "catalog:",
-    "jsonc-parser": "3.3.1"
+    "jsonc-parser": "3.3.1",
+    "@anthropic-ai/sandbox-runtime": "workspace:*"
   },
   "devDependencies": {
     "@opencode-ai/pty": "0.3.1",

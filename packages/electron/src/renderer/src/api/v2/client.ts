@@ -72,7 +72,7 @@ const mergeConfig = (entries: Array<{ type: string; info?: Json }>): Config =>
 const toLocation = (directory?: string): Location => (directory ? { location: { directory } } : {})
 
 const directoryQuery = (directory?: unknown): string =>
-  typeof directory === "string" && directory ? `?${new URLSearchParams({ directory }).toString()}` : 
+  typeof directory === "string" && directory ? `?${new URLSearchParams({ directory }).toString()}` : ""
 
 function bytesToBase64(bytes: Uint8Array): string {
   let binary = ""

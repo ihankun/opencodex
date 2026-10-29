@@ -1,12 +1,18 @@
 import { Location } from "@opencode/core/location"
 import { ModelsDev } from "@opencode/core/models-dev"
+import { Snapshot } from "@opencode/core/snapshot"
 import { Global } from "@opencode/util/global"
 import { FSUtil } from "@opencode/util/fs-util"
 import { Effect, Option } from "effect"
 import { HttpApiBuilder, HttpApiSchema } from "effect/http-api"
 import { applyEdits, modify, parse } from "jsonc-parser"
+import { mkdir, readFile, writeFile } from "node:fs/promises"
 import path from "node:path"
 import { Api } from "../api"
+import * as Checkpoint from "../opencodex/checkpoint"
+import * as Goal from "../opencodex/goal"
+import * as HookManager from "../opencodex/hooks"
+import { memorySourceDefinition, type MemorySourceID } from "../opencodex/memory-source"
 
 type GitResult = { code: number; stdout: string; stderr: string }
 
@@ -338,6 +344,155 @@ export const OpencodexHandler = HttpApiBuilder.group(Api, "server.opencodex", (h
         return HttpApiSchema.NoContent.make()
       })
 
+    const memoryContext = (location: {
+      directory: string
+      project: { id: string; directory: string; canonical: string }
+    }) => ({
+      globalConfig: global.config,
+      directory: location.directory,
+      worktree: location.project.directory,
+    })
+
+    const readMemory = async (
+      location: { directory: string; project: { id: string; directory: string; canonical: string } },
+      id: MemorySourceID,
+    ) => {
+      const source = memorySourceDefinition(memoryContext(location), id)
+      if (!source) throw new Error("Memory source not found")
+      const content = await readFile(source.path, "utf8").catch((error: unknown) => {
+        if (error instanceof Error && "code" in error && error.code === "ENOENT") return undefined
+        throw error
+      })
+      return { ...source, exists: content !== undefined, content: content ?? "" }
+    }
+
+    const writeMemory = async (
+      location: { directory: string; project: { id: string; directory: string; canonical: string } },
+      id: MemorySourceID,
+      content: string,
+    ) => {
+      if (Buffer.byteLength(content) > 1_000_000) throw new Error("Memory content exceeds 1 MB")
+      const source = memorySourceDefinition(memoryContext(location), id)
+      if (!source) throw new Error("Memory source not found")
+      await mkdir(path.dirname(source.path), { recursive: true })
+      await writeFile(source.path, content)
+      return readMemory(location, id)
+    }
+
+    const goalGet = (ctx: { params: { sessionID: string } }) =>
+      Effect.gen(function* () {
+        const goal = yield* Effect.promise(() => Goal.getGoal(ctx.params.sessionID))
+        return { goal }
+      }).pipe(Effect.orDie)
+
+    const goalStatus = (ctx: { params: { sessionID: string }; payload: { status: "active" | "paused" } }) =>
+      Effect.gen(function* () {
+        const goal = yield* Effect.promise(() => Goal.setGoalStatus(ctx.params.sessionID, ctx.payload.status))
+        return { goal }
+      }).pipe(Effect.orDie)
+
+    const goalClear = (ctx: { params: { sessionID: string } }) =>
+      Effect.gen(function* () {
+        return yield* Effect.promise(() => Goal.clearGoal(ctx.params.sessionID))
+      }).pipe(Effect.orDie)
+
+    const hooksGet = () =>
+      Effect.gen(function* () {
+        const location = yield* Location.Service
+        return yield* Effect.promise(() => HookManager.read(location.directory))
+      }).pipe(Effect.orDie)
+
+    const hooksUpdate = (ctx: { payload: { hooks: readonly HookManager.Definition[] } }) =>
+      Effect.gen(function* () {
+        const location = yield* Location.Service
+        return yield* Effect.promise(() => HookManager.write(location.directory, [...ctx.payload.hooks]))
+      }).pipe(Effect.orDie)
+
+    const hooksRun = (ctx: { payload: { event: HookManager.Event } }) =>
+      Effect.gen(function* () {
+        const location = yield* Location.Service
+        return yield* Effect.promise(() => HookManager.execute(location.directory, ctx.payload.event))
+      }).pipe(Effect.orDie)
+
+    const memoryGet = (ctx: { params: { sourceID: MemorySourceID } }) =>
+      Effect.gen(function* () {
+        const location = yield* Location.Service
+        return yield* Effect.promise(() => readMemory(location, ctx.params.sourceID))
+      }).pipe(Effect.orDie)
+
+    const memoryUpdate = (ctx: { params: { sourceID: MemorySourceID }; payload: { content: string } }) =>
+      Effect.gen(function* () {
+        const location = yield* Location.Service
+        return yield* Effect.promise(() => writeMemory(location, ctx.params.sourceID, ctx.payload.content))
+      }).pipe(Effect.orDie)
+
+    const memoryCapture = (ctx: { payload: { content: string } }) =>
+      Effect.gen(function* () {
+        const content = ctx.payload.content.trim()
+        if (!content) return yield* Effect.die(new Error("Memory content is required"))
+        const location = yield* Location.Service
+        const current = yield* Effect.promise(() => readMemory(location, "workspace"))
+        const heading = current.content.trim() ? "\n\n" : "# Workspace memory\n\n"
+        return yield* Effect.promise(() =>
+          writeMemory(
+            location,
+            "workspace",
+            `${current.content.trimEnd()}${heading}## Saved ${new Date().toISOString()}\n\n${content}\n`,
+          ),
+        )
+      }).pipe(Effect.orDie)
+
+    const checkpointList = (ctx: { query: { sessionID?: string } }) =>
+      Effect.gen(function* () {
+        const location = yield* Location.Service
+        return yield* Checkpoint.list(location.project.id, location.project.directory, ctx.query.sessionID)
+      }).pipe(Effect.orDie)
+
+    const checkpointCreate = (ctx: { payload: { sessionID: string; label: string } }) =>
+      Effect.gen(function* () {
+        const location = yield* Location.Service
+        const snapshots = yield* Snapshot.Service
+        return yield* Checkpoint.create({
+          snapshots,
+          projectID: location.project.id,
+          worktree: location.project.directory,
+          directory: location.directory,
+          sessionID: ctx.payload.sessionID,
+          label: ctx.payload.label,
+        })
+      }).pipe(Effect.orDie)
+
+    const checkpointRestore = (ctx: { payload: { id: string } }) =>
+      Effect.gen(function* () {
+        const location = yield* Location.Service
+        const snapshots = yield* Snapshot.Service
+        return yield* Checkpoint.restore({
+          snapshots,
+          projectID: location.project.id,
+          worktree: location.project.directory,
+          directory: location.directory,
+          id: ctx.payload.id,
+        })
+      }).pipe(Effect.orDie)
+
+    const checkpointDelete = (ctx: { params: { checkpointID: string } }) =>
+      Effect.gen(function* () {
+        const location = yield* Location.Service
+        return yield* Checkpoint.remove(location.project.id, location.project.directory, ctx.params.checkpointID)
+      }).pipe(Effect.orDie)
+
+    const checkpointDiff = (ctx: { params: { checkpointID: string } }) =>
+      Effect.gen(function* () {
+        const location = yield* Location.Service
+        const snapshots = yield* Snapshot.Service
+        return yield* Checkpoint.diff({
+          snapshots,
+          projectID: location.project.id,
+          worktree: location.project.directory,
+          id: ctx.params.checkpointID,
+        })
+      }).pipe(Effect.orDie)
+
     return handlers
       .handle("opencodex.config.patch", configPatch)
       .handle("opencodex.provider.refresh", providerRefresh)
@@ -352,5 +507,19 @@ export const OpencodexHandler = HttpApiBuilder.group(Api, "server.opencodex", (h
       .handle("opencodex.vcs.history", history)
       .handle("opencodex.worktree.details", worktreeDetails)
       .handle("opencodex.worktree.reset", worktreeReset)
+      .handle("opencodex.goal.get", goalGet)
+      .handle("opencodex.goal.status", goalStatus)
+      .handle("opencodex.goal.clear", goalClear)
+      .handle("opencodex.hooks.get", hooksGet)
+      .handle("opencodex.hooks.update", hooksUpdate)
+      .handle("opencodex.hooks.run", hooksRun)
+      .handle("opencodex.memory.get", memoryGet)
+      .handle("opencodex.memory.update", memoryUpdate)
+      .handle("opencodex.memory.capture", memoryCapture)
+      .handle("opencodex.checkpoint.list", checkpointList)
+      .handle("opencodex.checkpoint.create", checkpointCreate)
+      .handle("opencodex.checkpoint.restore", checkpointRestore)
+      .handle("opencodex.checkpoint.delete", checkpointDelete)
+      .handle("opencodex.checkpoint.diff", checkpointDiff)
   }),
 )

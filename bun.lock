@@ -746,6 +746,7 @@
       "name": "@opencode/server",
       "version": "2.2.0",
       "dependencies": {
+        "@anthropic-ai/sandbox-runtime": "workspace:*",
         "@effect/platform-node": "catalog:",
         "@effect/platform-node-shared": "catalog:",
         "@opencode/core": "workspace:*",
