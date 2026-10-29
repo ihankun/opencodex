@@ -15,7 +15,8 @@
  *   9. Graceful shutdown
  */
 
-import { createOpencodeClient } from "@opencode-ai/sdk/v2"
+import { OpenCode } from "@opencode/client"
+import { createEventProjector } from "../../../src/renderer/src/api/v2/events"
 import { resolve } from "node:path"
 import { homedir } from "node:os"
 import { readFile } from "node:fs/promises"
@@ -136,11 +137,11 @@ async function main(): Promise<void> {
       logger,
     })
     : undefined
-  const client = createOpencodeClient({
+  const client = OpenCode.make({
     baseUrl: serverUrl,
-    directory: opencodeDirectory,
     headers: authorization ? { Authorization: authorization } : undefined,
   })
+  const projectEvent = createEventProjector()
   async function waitForServer(maxRetries = 10): Promise<void> {
     const bootAttempt = await serviceLauncher?.ensureServerReady("startup")
     if (bootAttempt?.healthy) {
@@ -150,7 +151,7 @@ async function main(): Promise<void> {
     let delay = 250
     for (let attempt = 1; attempt <= maxRetries; attempt++) {
       try {
-        await client.session.status()
+        await client.server.info()
         return
       } catch {
         if (attempt === maxRetries) {
@@ -459,13 +460,13 @@ async function main(): Promise<void> {
     let delay = 1_000
     while (!signal.aborted) {
       try {
-        const events = await client.global.event()
+        const events = client.event.subscribe()
         const connectedAt = Date.now()
         logger.info("SSE global event stream connected")
         delay = 1_000  // reset backoff on successful connect
-        for await (const event of events.stream) {
+        for await (const event of events) {
           if (signal.aborted) break
-          dispatchGlobalSseEvent(event)
+          for (const projected of projectEvent(event)) dispatchGlobalSseEvent(projected)
         }
         if (!signal.aborted) {
           const durationMs = Date.now() - connectedAt

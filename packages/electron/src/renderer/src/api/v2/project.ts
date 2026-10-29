@@ -191,16 +191,37 @@ export function projectAssistantParts(message: SessionMessageAssistant, sessionI
   return parts
 }
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return !!value && typeof value === "object" && !Array.isArray(value)
+}
+
 function userMessage(message: SessionMessageUser, sessionID: string): MessageWithParts {
-  const parts: Part[] = [
-    {
-      id: `${message.id}:text`,
-      sessionID,
-      messageID: message.id,
-      type: "text",
-      text: message.text,
-    },
-  ]
+  const stored = isRecord(message.metadata) ? message.metadata.opencodex : undefined
+  const storedParts = isRecord(stored) && Array.isArray(stored.parts) ? stored.parts : undefined
+  const parts: Part[] = storedParts
+    ? storedParts.flatMap((item, index): Part[] => {
+        if (!isRecord(item) || item.type !== "text" || typeof item.text !== "string") return []
+        return [
+          {
+            id: `${message.id}:text:${index}`,
+            sessionID,
+            messageID: message.id,
+            type: "text",
+            text: item.text,
+            synthetic: item.synthetic === true,
+            metadata: isRecord(item.metadata) ? item.metadata : undefined,
+          },
+        ]
+      })
+    : [
+        {
+          id: `${message.id}:text`,
+          sessionID,
+          messageID: message.id,
+          type: "text",
+          text: message.text,
+        },
+      ]
   for (const [index, file] of (message.files ?? []).entries()) {
     parts.push(filePart(sessionID, message.id, index, file))
   }

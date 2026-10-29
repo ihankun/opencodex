@@ -61,11 +61,27 @@
 
 ## 当前状态
 
-- 合并提交：`chore: merge upstream dev (OpenCode V2)`。
-- `util`、`schema`、`protocol`、`core`、`server`、`client`、`sdk`、`cli` 使用 `bun check --no-script` 全部通过。
-- `packages/electron` 目前有约 414 个类型错误，集中在 renderer 的 API 封装、事件/消息类型和聊天组件；main 进程只有少量与旧服务端路径相关的错误。
-- `bun --cwd packages/electron typecheck` 已切换为 `bun check --no-script`，与 V2 工具链一致。
+已完成：
 
+- Renderer 已切到 `@opencode/client`：V1 类型通过 vendored `legacy-sdk.ts` 保留，`api/v2/client.ts` 把旧方法映射到 V2 `/api`，`api/v2/project.ts` 把 V2 会话/消息投影回旧 UI 结构，`api/v2/events.ts` 把 V2 事件流转成旧事件回调。`packages/electron` 类型检查通过。
+- 新增 `server.opencodex` 协议组与 handler，覆盖：config patch、provider refresh、project subrepos、VCS stage/unstage/discard/commit/push/operation/history/branch switch、worktree details/reset、goal、hooks、memory、checkpoint。集成测试 `packages/server/test/opencodex.test.ts` 通过。
+- VCS 变更操作会触发 `git.before` / `git.after` hooks。
+- Electron 改为使用 V2 CLI 构建的 Node SEA 二进制：`scripts/build-server.ts` 调用 `packages/cli/script/build-node.ts --single`，产物复制到 `.server/opencode-server[.exe]`；sidecar 以 `serve --stdio` 启动它并解析 `{url}`。
+- sidecar 为每次启动生成随机密码，同时传给服务端和 renderer；renderer 的 Basic auth 已恢复正常。
+- CLI Web UI 包装层会转发 `/experimental/*`、`/vcs/*`、`/project/subrepos`、`/provider/refresh` 到 API，避免 fork 路由被 SPA 吞掉。
+- IM bridge 的 SDK 调用迁移到 `@opencode/client`，SSE 复用同一套事件投影。
+
+仍需补齐：
+
+- Goal 模式的 Agent / Tool / `/goal` command 还没移植到 V2 插件体系；当前 goal 面板的读写/状态/清除接口可用，但 agent 不会自动创建和更新 goal。
+- `tool.ids`、`tool.list`、LSP 状态、formatter 状态、symbol 搜索仍返回空，相关 UI 会显示为空。
+- MCP OAuth 认证流程目前是占位实现；provider 认证到 V2 integration/credential 的映射是近似值，需要在真实 provider 上验证。
+- automation hooks（`automation.before/after`）还没有接到 V2 的 session 执行流程。
+- Session todo 依赖 V2 todo 工具的 metadata；需要用桌面 Todo 插件实测。
+- 需要交互验证：聊天流式输出、权限/表单弹窗、provider 登录、VCS 面板、checkpoint 恢复。
+- 服务端新增了对 `@anthropic-ai/sandbox-runtime` 的依赖；Node/Electron 构建可用，workerd 构建未验证。
+
+## 工具链
 ## 工具链
 
 - 安装依赖：`bun install`（建议使用 bun 1.4.4）

@@ -1,6 +1,7 @@
 import { existsSync, mkdirSync, statSync, writeFileSync } from "node:fs"
+import { randomBytes } from "node:crypto"
 import { dirname, join } from "node:path"
-import { fileURLToPath, pathToFileURL } from "node:url"
+import { fileURLToPath } from "node:url"
 import { app, utilityProcess } from "electron"
 import type { Details } from "electron"
 import { writeLog } from "./logging"
@@ -58,6 +59,9 @@ export async function spawnServer(userDataPath: string, cors: string[], secureEn
   // Port 0 keeps 4096 as the preferred address, then lets the server fall back
   // to an OS-assigned free port when another OpenCodex instance is running.
   const port = 0
+  // V2's `serve` generates a random password when none is provided, so pin one
+  // here and hand it to both the sidecar and the renderer.
+  const password = randomBytes(32).toString("base64url")
   const workspacePath = join(userDataPath, "workspace")
   mkdirSync(workspacePath, { recursive: true })
   
@@ -127,6 +131,7 @@ export async function spawnServer(userDataPath: string, cors: string[], secureEn
       type: "start",
       hostname: "127.0.0.1",
       port,
+      password,
       userDataPath,
       cors,
     })
@@ -140,7 +145,7 @@ export async function spawnServer(userDataPath: string, cors: string[], secureEn
     state: {
       url,
       username: "opencode",
-      password: "",
+      password,
     },
     stop() {
       if (stopping) return stopping
@@ -163,7 +168,7 @@ function createEnv(secureEnvironment: Record<string, string>, userDataPath: stri
   )
   delete env.DEBUG
   if (process.platform === "linux") delete env.LD_PRELOAD
-  env.OPENCODE_SERVER_MODULE = serverModuleUrl()
+  env.OPENCODE_SERVER_BINARY = serverBinaryPath()
   env.OPENCODE_SANDBOX_RUNTIME_ROOT = sandboxRuntimeRoot()
 
   const bundledModelsPath = app.isPackaged
@@ -181,11 +186,10 @@ export function sandboxRuntimeRoot() {
   return join(dirname(fileURLToPath(import.meta.url)), "../../../sandbox-runtime")
 }
 
-function serverModuleUrl() {
-  const mainDir = dirname(fileURLToPath(import.meta.url))
-  const bundled = join(mainDir, "chunks/opencode-server.js")
-  if (existsSync(bundled)) return pathToFileURL(bundled).href
-  return pathToFileURL(join(mainDir, "../../../opencode/dist/node/node.js")).href
+function serverBinaryPath() {
+  const binary = process.platform === "win32" ? "opencode-server.exe" : "opencode-server"
+  if (app.isPackaged) return join(process.resourcesPath, "server", binary)
+  return join(app.getAppPath(), ".server", binary)
 }
 
 function delay(ms: number) {

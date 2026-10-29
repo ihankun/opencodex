@@ -1,11 +1,9 @@
 import { defineConfig } from "electron-vite"
-import { mkdir, readdir, readFile, writeFile } from "node:fs/promises"
 import react from "@vitejs/plugin-react"
 import tailwindcss from "@tailwindcss/vite"
 import packageJson from "./package.json" with { type: "json" }
 import opencodePackageJson from "../cli/package.json" with { type: "json" }
 
-const OPENCODE_SERVER_DIST = "../opencode/dist/node"
 const nodePtyPkg = `@lydell/node-pty-${process.platform}-${process.arch}`
 
 export default defineConfig({
@@ -29,23 +27,6 @@ export default defineConfig({
         enforce: "pre",
         resolveId(source) {
           if (source === "@lydell/node-pty") return nodePtyPkg
-        },
-      },
-      {
-        name: "custom-electron:copy-opencode-server",
-        async writeBundle() {
-          await mkdir("./out/main/chunks", { recursive: true })
-          await writeFile(
-            "./out/main/chunks/opencode-server.js",
-            (await readFile(`${OPENCODE_SERVER_DIST}/node.js`, "utf8")).replace(
-              /(["'])@lydell\/node-pty\1/g,
-              JSON.stringify(nodePtyPkg),
-            ),
-          )
-          for (const file of await readdir(OPENCODE_SERVER_DIST)) {
-            if (!file.endsWith(".wasm")) continue
-            await writeFile(`./out/main/chunks/${file}`, await readFile(`${OPENCODE_SERVER_DIST}/${file}`))
-          }
         },
       },
     ],

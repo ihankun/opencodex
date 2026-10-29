@@ -493,20 +493,35 @@ export const OpencodexHandler = HttpApiBuilder.group(Api, "server.opencodex", (h
         })
       }).pipe(Effect.orDie)
 
+    const withGitHooks = <A, E, R>(effect: Effect.Effect<A, E, R>) =>
+      Effect.gen(function* () {
+        const location = yield* Location.Service
+        yield* Effect.promise(() => HookManager.execute(location.directory, "git.before")).pipe(
+          Effect.catch(() => Effect.void),
+        )
+        return yield* effect.pipe(
+          Effect.ensuring(
+            Effect.promise(() => HookManager.execute(location.directory, "git.after")).pipe(
+              Effect.catch(() => Effect.void),
+            ),
+          ),
+        )
+      })
+
     return handlers
       .handle("opencodex.config.patch", configPatch)
       .handle("opencodex.provider.refresh", providerRefresh)
       .handle("opencodex.project.subrepos", projectSubrepos)
-      .handle("opencodex.vcs.branch", switchBranch)
-      .handle("opencodex.vcs.stage", stage)
-      .handle("opencodex.vcs.unstage", unstage)
-      .handle("opencodex.vcs.discard", discard)
-      .handle("opencodex.vcs.commit", commit)
-      .handle("opencodex.vcs.push", push)
-      .handle("opencodex.vcs.operation", operation)
+      .handle("opencodex.vcs.branch", (ctx) => withGitHooks(switchBranch(ctx)))
+      .handle("opencodex.vcs.stage", (ctx) => withGitHooks(stage(ctx)))
+      .handle("opencodex.vcs.unstage", (ctx) => withGitHooks(unstage(ctx)))
+      .handle("opencodex.vcs.discard", (ctx) => withGitHooks(discard(ctx)))
+      .handle("opencodex.vcs.commit", (ctx) => withGitHooks(commit(ctx)))
+      .handle("opencodex.vcs.push", () => withGitHooks(push()))
+      .handle("opencodex.vcs.operation", (ctx) => withGitHooks(operation(ctx)))
       .handle("opencodex.vcs.history", history)
       .handle("opencodex.worktree.details", worktreeDetails)
-      .handle("opencodex.worktree.reset", worktreeReset)
+      .handle("opencodex.worktree.reset", (ctx) => withGitHooks(worktreeReset(ctx)))
       .handle("opencodex.goal.get", goalGet)
       .handle("opencodex.goal.status", goalStatus)
       .handle("opencodex.goal.clear", goalClear)

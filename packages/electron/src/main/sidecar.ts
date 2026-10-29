@@ -1,4 +1,7 @@
+import { spawn, type ChildProcessWithoutNullStreams } from "node:child_process"
+import { once } from "node:events"
 import { join } from "node:path"
+import { createInterface } from "node:readline"
 import { getCACertificates, setDefaultCACertificates } from "node:tls"
 
 type StartCommand = {
@@ -28,18 +31,6 @@ type Listener = {
   stop(close?: boolean): Promise<void> | void
 }
 
-type ServerModule = {
-  Server: {
-    listen(options: {
-      hostname: string
-      port: number
-      cors: string[]
-      username?: string
-      password?: string
-    }): Promise<Listener> | Listener
-  }
-}
-
 const parentPort = requireParentPort()
 let listener: Listener | undefined
 
@@ -57,19 +48,58 @@ async function start(command: StartCommand) {
   try {
     prepareEnv(command)
     useSystemCertificates()
-    const serverModule = await importServerModule()
-
-    listener = await serverModule.Server.listen({
-      hostname: command.hostname,
-      port: command.port,
-      cors: command.cors,
-      ...(command.password ? { username: "opencode", password: command.password } : {}),
+    const binary = process.env.OPENCODE_SERVER_BINARY
+    if (!binary) throw new Error("OPENCODE_SERVER_BINARY is not configured")
+    const child = spawn(binary, ["serve", "--stdio"], {
+      env: process.env,
+      stdio: ["pipe", "pipe", "pipe"],
+      windowsHide: true,
     })
+    const url = await waitForUrl(child)
+    listener = { url: new URL(url), stop: () => stopChild(child) }
     parentPort.postMessage({ type: "ready", url: listener.url.toString() })
   } catch (error) {
     parentPort.postMessage({ type: "error", error: serializeError(error) })
     setImmediate(() => process.exit(1))
   }
+}
+
+function waitForUrl(child: ChildProcessWithoutNullStreams): Promise<string> {
+  return new Promise((resolve, reject) => {
+    let settled = false
+    const finish = (error?: Error, url?: string) => {
+      if (settled) return
+      settled = true
+      if (error) reject(error)
+      else resolve(url ?? "")
+    }
+    const lines = createInterface({ input: child.stdout })
+    lines.on("line", (line) => {
+      const trimmed = line.trim()
+      if (!trimmed.startsWith("{")) return
+      try {
+        const parsed = JSON.parse(trimmed) as { url?: unknown }
+        if (typeof parsed.url === "string") finish(undefined, parsed.url)
+      } catch {
+        // Server logs can be JSON-looking; ignore until the ready line.
+      }
+    })
+    let stderr = ""
+    child.stderr.on("data", (chunk) => {
+      stderr = `${stderr}${String(chunk)}`.slice(-8000)
+    })
+    child.on("error", (error) => finish(error))
+    child.on("exit", (code) => finish(new Error(`Server exited before it was ready (${code ?? "unknown"}): ${stderr}`)))
+  })
+}
+
+async function stopChild(child: ChildProcessWithoutNullStreams) {
+  if (child.exitCode !== null) return
+  child.stdin.end()
+  const exited = once(child, "exit").then(() => undefined)
+  const timeout = new Promise<void>((resolve) => setTimeout(resolve, 5000))
+  await Promise.race([exited, timeout])
+  if (child.exitCode === null) child.kill()
 }
 
 async function stop() {
@@ -80,12 +110,6 @@ async function stop() {
     parentPort.postMessage({ type: "stopped" })
     setImmediate(() => process.exit(0))
   }
-}
-
-async function importServerModule() {
-  const serverModule = process.env.OPENCODE_SERVER_MODULE
-  if (!serverModule) throw new Error("OPENCODE_SERVER_MODULE is not configured")
-  return (await import(serverModule)) as ServerModule
 }
 
 function prepareEnv(command: StartCommand) {

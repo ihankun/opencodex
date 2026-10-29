@@ -17,11 +17,16 @@ export const handler = Effect.fn("cli.web-ui.handler")(function* (options?: {
       const request = yield* HttpServerRequest.HttpServerRequest
       const url = new URL(request.url, "http://localhost")
       // Serve the web shell before API authentication so a signed-out browser gets the app's sign-in screen.
+      // OpenCodex also serves a few legacy-style routes outside /api; forward those to the API rather than the SPA.
       if (
         url.pathname === "/api" ||
         url.pathname.startsWith("/api/") ||
         url.pathname.startsWith("/auth/") ||
-        url.pathname === "/openapi.json"
+        url.pathname === "/openapi.json" ||
+        url.pathname.startsWith("/experimental/") ||
+        url.pathname.startsWith("/vcs/") ||
+        url.pathname === "/project/subrepos" ||
+        url.pathname === "/provider/refresh"
       )
         return yield* api.pipe(
           Effect.catchIf(isRouteNotFound, () => Effect.succeed(HttpServerResponse.empty({ status: 404 }))),

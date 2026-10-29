@@ -14,6 +14,10 @@ const config: Configuration = {
   files: ["out/**/*", "assets/**/*", "package.json"],
   extraResources: [
     {
+      from: ".server",
+      to: "server",
+    },
+    {
       from: "../sandbox-runtime",
       to: "sandbox-runtime",
       filter: ["LICENSE", "UPSTREAM.md", "vendor/seccomp/**/*", "vendor/srt-win/**/*"],
