@@ -134,7 +134,21 @@ export function makeLegacyClient(options: LegacyClientOptions) {
     return v2.project.list().then((projects) => projects.find((project) => project.id === info.project.id))
   }
 
-  async function buildPromptInput(input: Json) {
+  
+function toV2Permissions(rules: unknown): unknown {
+  if (!Array.isArray(rules)) return rules
+  return rules.flatMap((rule) => {
+    if (!rule || typeof rule !== "object") return []
+    const value = rule as Record<string, unknown>
+    if (typeof value.action === "string" && typeof value.resource === "string" && typeof value.effect === "string")
+      return [value]
+    if (typeof value.permission !== "string" || typeof value.pattern !== "string") return []
+    const effect = value.action === "allow" || value.action === "deny" ? value.action : "ask"
+    return [{ action: value.permission, resource: value.pattern, effect }]
+  })
+}
+
+async function buildPromptInput(input: Json) {
     const parts = Array.isArray(input.parts) ? (input.parts as Json[]) : []
     const texts = parts.filter((part) => part.type === "text" && typeof part.text === "string")
     const files = parts
@@ -201,9 +215,23 @@ export function makeLegacyClient(options: LegacyClientOptions) {
     }
   }
 
+
+  async function resolveAgentID(agent: string | undefined, directory?: string): Promise<string | undefined> {
+    if (!agent) return undefined
+    const agents = await v2.agent.list(toLocation(directory))
+    return (
+      agents.data.find((item) => item.id === agent)?.id ??
+      agents.data.find((item) => item.name === agent)?.id ??
+      agent
+    )
+  }
+
   async function switchModelAndAgent(input: Json, sessionID: string) {
     if (typeof input.agent === "string" && input.agent) {
-      await v2.session.switchAgent({ sessionID, agent: input.agent })
+      await v2.session.switchAgent({
+        sessionID,
+        agent: (await resolveAgentID(input.agent, input.directory as string | undefined)) ?? input.agent,
+      })
     }
     const model = input.model as Json | undefined
     if (model && typeof model.providerID === "string" && typeof model.modelID === "string") {
@@ -307,7 +335,7 @@ export function makeLegacyClient(options: LegacyClientOptions) {
         const session = await v2.session.create({
           title: (input.title as string | undefined) ?? undefined,
           parentID: input.parentID as string | undefined,
-          agent: input.agent as string | undefined,
+          agent: await resolveAgentID(input.agent as string | undefined, input.directory as string | undefined),
           model:
             model && typeof model.providerID === "string" && (typeof model.modelID === "string" || typeof model.id === "string")
               ? {
@@ -327,7 +355,7 @@ export function makeLegacyClient(options: LegacyClientOptions) {
         await v2.session.update({
           sessionID,
           title: input.title as string | undefined,
-          permissions: input.permission as never,
+          permissions: toV2Permissions(input.permission) as never,
           archived,
         })
         return { data: projectSession(await v2.session.get({ sessionID })) }
