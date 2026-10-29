@@ -3,7 +3,7 @@ import type {
   WorktreeCreateInput as SDKWorktreeCreateInput,
   WorktreeRemoveInput as SDKWorktreeRemoveInput,
   WorktreeResetInput as SDKWorktreeResetInput,
-} from '@opencode/client'
+} from "./legacy-sdk.ts"
 
 export type Worktree = SDKWorktree
 

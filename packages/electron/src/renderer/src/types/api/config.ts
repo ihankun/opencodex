@@ -12,7 +12,7 @@ import type {
   PermissionRuleConfig as SDKPermissionRuleConfig,
   ProviderConfig as SDKProviderConfig,
   ServerConfig as SDKServerConfig,
-} from '@opencode/client'
+} from "./legacy-sdk.ts"
 
 export type LogLevel = SDKLogLevel
 

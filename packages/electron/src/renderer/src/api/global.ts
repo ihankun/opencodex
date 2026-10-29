@@ -2,7 +2,7 @@
 // Global API - 全局管理
 // ============================================
 
-import type { GlobalHealthResponse as HealthInfo } from '@opencode/client'
+import type { GlobalHealthResponse as HealthInfo } from "../types/api/legacy-sdk.ts"
 import { getSDKClient, unwrap } from './sdk'
 import { formatPathForApi } from '../utils/directoryUtils'
 

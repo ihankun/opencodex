@@ -2,7 +2,7 @@ import type {
   ToolIds as SDKToolIds,
   ToolList as SDKToolList,
   ToolListItem as SDKToolListItem,
-} from '@opencode/client'
+} from "./legacy-sdk.ts"
 
 export type ToolIDs = SDKToolIds
 

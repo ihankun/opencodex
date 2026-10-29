@@ -4,7 +4,7 @@ import type {
   MessageOutputLengthError as SDKMessageOutputLengthError,
   ProviderAuthError as SDKProviderAuthError,
   UnknownError as SDKUnknownError,
-} from '@opencode/client'
+} from "./legacy-sdk.ts"
 
 export interface ErrorInfo {
   name: string

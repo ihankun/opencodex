@@ -201,7 +201,7 @@ function toFileUrl(path: string): string {
 async function buildPromptParams(params: SendMessageParams): Promise<PromptParams> {
   const { sessionId, text, attachments, model, agent, variant, delivery, directory } = params
 
-  const parts: NonNullable<PromptParams['parts']> = []
+  const parts: Array<Record<string, unknown>> = []
 
   const sessionReferences = attachments.filter(
     attachment => attachment.type === 'session' && attachment.sessionId && attachment.sessionId !== sessionId,

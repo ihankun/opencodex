@@ -10,7 +10,7 @@ import type {
   McpStatusFailed as SDKMcpStatusFailed,
   McpStatusNeedsAuth as SDKMcpStatusNeedsAuth,
   McpStatusNeedsClientRegistration as SDKMcpStatusNeedsClientRegistration,
-} from '@opencode/client'
+} from "./legacy-sdk.ts"
 
 export type MCPStatusConnected = SDKMcpStatusConnected
 

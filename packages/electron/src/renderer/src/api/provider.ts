@@ -1,6 +1,6 @@
 import { getSDKClient, unwrap } from './sdk'
 import { formatPathForApi } from '../utils/directoryUtils'
-import type { Auth, Provider, ProviderAuthAuthorization, ProviderAuthMethod } from '@opencode/client'
+import type { Auth, Provider, ProviderAuthAuthorization, ProviderAuthMethod } from "../types/api/legacy-sdk.ts"
 
 export interface ProviderListResult {
   all: Provider[]

@@ -2,7 +2,7 @@ import type {
   Path as SDKPath,
   Project as SDKProject,
   ProjectUpdateData as SDKProjectUpdateData,
-} from '@opencode/client'
+} from "./legacy-sdk.ts"
 
 export type Project = SDKProject
 

@@ -1,4 +1,4 @@
-import type { VcsDiffData as SDKVcsDiffData, VcsInfo as SDKVcsInfo } from '@opencode/client'
+import type { VcsDiffData as SDKVcsDiffData, VcsInfo as SDKVcsInfo } from "./legacy-sdk.ts"
 
 export type VcsInfo = SDKVcsInfo
 

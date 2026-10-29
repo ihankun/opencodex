@@ -4,7 +4,7 @@ import type {
   QuestionInfo as SDKQuestionInfo,
   QuestionOption as SDKQuestionOption,
   QuestionRequest as SDKQuestionRequest,
-} from '@opencode/client'
+} from "./legacy-sdk.ts"
 
 export type PermissionToolInfo = NonNullable<SDKPermissionRequest['tool']>
 

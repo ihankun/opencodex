@@ -4,7 +4,7 @@ import type {
   Provider as SDKProvider,
   ProviderAuthAuthorization as SDKProviderAuthAuthorization,
   ProviderAuthMethod as SDKProviderAuthMethod,
-} from '@opencode/client'
+} from "./legacy-sdk.ts"
 
 export type ModelIOCapabilities = SDKModel['capabilities']['input']
 

@@ -1,5 +1,5 @@
-import { OpenCode } from "@opencode/client"
-import type { Event, Message, Model, Part, Provider } from "@opencode/client"
+import { makeLegacyClient, type LegacyClient } from "./src/api/v2/client"
+import type { Event, Message, Model, Part, Provider } from "./src/types/api/legacy-sdk"
 import "./styles.css"
 
 type ServerInfo = {
@@ -33,7 +33,7 @@ const modelMenu = document.querySelector<HTMLDivElement>("#model-menu")
 const conversation = document.querySelector<HTMLElement>("#conversation")
 
 let server: ServerInfo | undefined
-let client: ReturnType<typeof OpenCode.make> | undefined
+let client: LegacyClient | undefined
 let sessionID: string | undefined
 let sending = false
 let eventsStarted = false
@@ -55,13 +55,22 @@ async function renderServerStatus() {
   }
 
   server = state.server
-  client = OpenCode.make({
+  client = makeLegacyClient({
     baseUrl: server.url,
     headers: authHeaders(server),
-    throwOnError: true,
+    fetch: globalThis.fetch,
+    requestJson: async (path, init) => {
+      const response = await fetch(new URL(path, server!.url), {
+        ...init,
+        headers: { ...authHeaders(server!), ...(init?.headers as Record<string, string> | undefined) },
+      })
+      if (!response.ok) throw new Error(`HTTP ${response.status}`)
+      if (response.status === 204) return undefined as never
+      return response.json()
+    },
   })
 
-  const response = await fetch(new URL("/global/health", server.url), {
+  const response = await fetch(new URL("/api/info", server.url), {
     headers: authHeaders(server),
   })
 

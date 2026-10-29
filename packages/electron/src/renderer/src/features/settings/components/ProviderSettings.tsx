@@ -15,7 +15,7 @@ import { refreshModels } from '../../../hooks/useModels'
 import { useServerStore } from '../../../hooks'
 import { clipboardErrorHandler, copyTextToClipboard } from '../../../utils'
 import { settingsSearchInputClass, SettingsCard, SettingsSection, Toggle } from './SettingsUI'
-import type { Provider, ProviderAuthMethod } from '@opencode/client'
+import type { Provider, ProviderAuthMethod } from "../../../types/api/legacy-sdk.ts"
 
 type AuthPrompt = NonNullable<ProviderAuthMethod['prompts']>[number]
 

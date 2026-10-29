@@ -4,7 +4,7 @@ import type {
   FileNode as SDKFileNode,
   SnapshotFileDiff as SDKSnapshotFileDiff,
   Symbol as SDKSymbol,
-} from '@opencode/client'
+} from "./legacy-sdk.ts"
 
 export type FileNodeType = SDKFileNode['type']
 

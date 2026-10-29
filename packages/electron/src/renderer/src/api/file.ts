@@ -96,7 +96,7 @@ export async function prefetchRootDirectory(directory?: string): Promise<void> {
  */
 export async function getFileContent(path: string, directory?: string): Promise<FileContent> {
   const sdk = getSDKClient()
-  return unwrap(await sdk.file.read({ path, directory: formatPathForApi(directory) }))
+  return unwrap<FileContent>(await sdk.file.read({ path, directory: formatPathForApi(directory) }))
 }
 
 /**

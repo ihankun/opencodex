@@ -11,6 +11,7 @@ import { normalizeFileDiffs } from '../types/api/file'
 import type { ApiSession, SessionListParams, FileDiff, ApiMessageWithParts, ApiUserMessage } from './types'
 import type { SessionStatusMap } from '../types/api/session'
 import type { TodoItem } from '../types/api/event'
+import type { Todo as SDKTodo } from '../types/api/legacy-sdk'
 import type { SessionPermissionRule } from '../store/autoApproveStore'
 
 const SESSION_LIST_CACHE_DURATION = 250
@@ -328,6 +329,6 @@ export type ApiTodo = TodoItem
  */
 export async function getSessionTodos(sessionId: string, directory?: string): Promise<ApiTodo[]> {
   const sdk = getSDKClient()
-  const todos = unwrap(await sdk.session.todo({ sessionID: sessionId, directory: formatPathForApi(directory) }))
+  const todos = unwrap<SDKTodo[]>(await sdk.session.todo({ sessionID: sessionId, directory: formatPathForApi(directory) }))
   return normalizeTodoItems(todos)
 }

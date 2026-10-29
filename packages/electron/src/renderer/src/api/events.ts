@@ -14,6 +14,7 @@ import type {
   TodoUpdatedPayload,
 } from "./types"
 import { EventTypes } from "../types/api/event"
+import { createEventProjector } from "./v2/events"
 
 // ============================================
 // Connection State
@@ -34,6 +35,8 @@ let connectionInfo: ConnectionInfo = {
   lastEventTime: 0,
   reconnectAttempt: 0,
 }
+
+const projectServerEvent = createEventProjector()
 
 const connectionListeners = new Set<(info: ConnectionInfo) => void>()
 
@@ -196,7 +199,7 @@ function connectViaBrowser() {
   // 捕获当前连接代次
   const myGeneration = connectionGeneration
 
-  fetch(`${getApiBaseUrl()}/global/event`, {
+  fetch(`${getApiBaseUrl()}/api/event`, {
     signal: singletonController.signal,
     headers: {
       Accept: "text/event-stream",
@@ -264,8 +267,7 @@ function connectViaBrowser() {
         resetHeartbeat()
 
         for (const eventData of sseParser.push(decoder.decode(value, { stream: true }))) {
-          const globalEvent = parseGlobalEvent(eventData)
-          if (globalEvent) {
+          for (const globalEvent of parseServerEvents(eventData)) {
             broadcastEvent(globalEvent)
           }
         }
@@ -295,24 +297,18 @@ function connectViaBrowser() {
     })
 }
 
-function parseGlobalEvent(raw: string): GlobalEvent | null {
+function parseServerEvents(raw: string): GlobalEvent[] {
   try {
     const parsed: unknown = JSON.parse(raw)
-    return isGlobalEvent(parsed) ? parsed : null
+    if (!isRecord(parsed)) return []
+    if (typeof parsed.id !== "string" || typeof parsed.type !== "string") return []
+    return projectServerEvent(parsed as never)
   } catch (error) {
     if (import.meta.env.DEV) {
       console.warn("[SSE] Failed to parse event:", error, raw)
     }
-    return null
+    return []
   }
-}
-
-function isGlobalEvent(value: unknown): value is GlobalEvent {
-  if (!isRecord(value)) return false
-  if (typeof value.directory !== "string") return false
-  if (!isRecord(value.payload)) return false
-  if (typeof value.payload.type !== "string") return false
-  return "properties" in value.payload
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {

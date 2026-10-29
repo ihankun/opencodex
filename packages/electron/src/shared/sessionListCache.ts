@@ -1,4 +1,4 @@
-import type { Session } from "@opencode/client"
+import type { Session } from "../renderer/src/types/api/legacy-sdk"
 
 export type CachedSessionList = {
   directory: string

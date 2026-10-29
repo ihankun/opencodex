@@ -19,7 +19,7 @@ import type {
   ToolPart as SDKToolPart,
   ToolState as SDKToolState,
   UserMessage as SDKUserMessage,
-} from '@opencode/client'
+} from "./legacy-sdk.ts"
 
 export type MessageSummary = NonNullable<SDKUserMessage['summary']>
 

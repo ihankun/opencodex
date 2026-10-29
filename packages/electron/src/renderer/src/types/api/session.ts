@@ -5,7 +5,7 @@ import type {
   SessionListData as SDKSessionListData,
   SessionStatus as SDKSessionStatus,
   SessionUpdateData as SDKSessionUpdateData,
-} from '@opencode/client'
+} from "./legacy-sdk.ts"
 
 export type SessionStatus = SDKSessionStatus
 

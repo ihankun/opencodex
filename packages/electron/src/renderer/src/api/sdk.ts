@@ -7,7 +7,7 @@
 // 3. 为上层 API 模块提供统一的 client 获取方式
 // ============================================
 
-import { OpenCode } from '@opencode/client'
+import { makeLegacyClient, type LegacyClient } from './v2/client'
 import { serverStore, makeBasicAuthHeader } from '../store/serverStore'
 const _apiRequestGenerations = new Map<string, number>()
 const _apiRequestControllers = new Map<AbortController, string>()
@@ -63,7 +63,7 @@ export function abortInFlightApiRequests(reason = 'Server endpoint changed', ser
 }
 
 // Client 缓存：按 "baseUrl + authHash" 缓存实例，避免重复创建
-const _cachedClients = new Map<string, { key: string; client: ReturnType<typeof OpenCode.make> }>()
+const _cachedClients = new Map<string, { key: string; client: LegacyClient }>()
 
 function requireServer(serverId: string) {
   const server = serverStore.getServer(serverId)
@@ -90,7 +90,7 @@ function buildHeaders(serverId: string): Record<string, string> {
 /**
  * 同步获取 SDK client
  */
-export function getSDKClient(serverId = serverStore.getActiveServerId()): ReturnType<typeof OpenCode.make> {
+export function getSDKClient(serverId = serverStore.getActiveServerId()): LegacyClient {
   const key = buildCacheKey(serverId)
   const cached = _cachedClients.get(serverId)
   if (cached?.key === key) return cached.client
@@ -100,10 +100,11 @@ export function getSDKClient(serverId = serverStore.getActiveServerId()): Return
   const generation = requestGeneration(serverId)
   const fetchImpl = ((input, init) => trackedFetch(input, init, serverId, generation)) as typeof globalThis.fetch
 
-  const client = OpenCode.make({
+  const client = makeLegacyClient({
     baseUrl: server.url,
     headers,
     fetch: fetchImpl,
+    requestJson: (path, init) => apiFetchJson(path, init, serverId),
   })
   _cachedClients.set(serverId, { key, client })
   return client
@@ -144,7 +145,7 @@ export async function apiFetchJson<T>(path: string, init?: RequestInit, serverId
 /**
  * 异步获取 SDK client（等待凭据初始化后重建缓存）
  */
-export async function getSDKClientAsync(serverId = serverStore.getActiveServerId()): Promise<ReturnType<typeof OpenCode.make>> {
+export async function getSDKClientAsync(serverId = serverStore.getActiveServerId()): Promise<LegacyClient> {
   await serverStore.whenCredentialsReady(serverId)
   _cachedClients.delete(serverId)
   return getSDKClient(serverId)

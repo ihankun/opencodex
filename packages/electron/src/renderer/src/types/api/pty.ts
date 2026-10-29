@@ -2,7 +2,7 @@ import type {
   Pty as SDKPty,
   PtyCreateData as SDKPtyCreateData,
   PtyUpdateData as SDKPtyUpdateData,
-} from '@opencode/client'
+} from "./legacy-sdk.ts"
 
 export type PtySize = NonNullable<NonNullable<SDKPtyUpdateData['body']>['size']>
 

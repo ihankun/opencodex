@@ -1,4 +1,4 @@
-import type { AppSkillsResponse } from '@opencode/client'
+import type { AppSkillsResponse } from "./legacy-sdk.ts"
 
 export type Skill = AppSkillsResponse[number]
 

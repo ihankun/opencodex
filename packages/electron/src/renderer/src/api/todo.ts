@@ -1,4 +1,4 @@
-import type { Todo as SDKTodo } from '@opencode/client'
+import type { Todo as SDKTodo } from "../types/api/legacy-sdk.ts"
 import type { TodoItem } from '../types/api/event'
 
 function buildTodoId(todo: SDKTodo, index: number): string {
