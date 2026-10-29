@@ -70,6 +70,7 @@
 - sidecar 为每次启动生成随机密码，同时传给服务端和 renderer；renderer 的 Basic auth 已恢复正常。
 - CLI Web UI 包装层会转发 `/experimental/*`、`/vcs/*`、`/project/subrepos`、`/provider/refresh` 到 API，避免 fork 路由被 SPA 吞掉。
 - IM bridge 的 SDK 调用迁移到 `@opencode/client`，SSE 复用同一套事件投影。
+- Electron 预览启动 smoke test 通过：窗口加载、V2 sidecar ready、renderer 鉴权正常（未出现 Unauthorized / 模型拉取失败）。
 
 仍需补齐：
 
