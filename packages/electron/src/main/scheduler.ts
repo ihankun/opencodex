@@ -345,7 +345,7 @@ export class TaskScheduler {
     const sessionID = String(row.session_id)
     if (server && !sessionID.startsWith("pending:")) {
       const query = row.execution_directory ? `?directory=${encodeURIComponent(String(row.execution_directory))}` : ""
-      await this.fetchJson(server, `/session/${encodeURIComponent(sessionID)}/abort${query}`, { method: "POST" }).catch(() => undefined)
+      await this.fetchJson(server, `/api/session/${encodeURIComponent(sessionID)}/interrupt`, { method: "POST" }).catch(() => undefined)
     }
     this.finishRun(id, "cancelled", "Cancelled by user")
     this.announceRun(task, id)
@@ -666,18 +666,18 @@ export class TaskScheduler {
       this.requireNotCancelled(runID)
       if (!server) throw new Error(`Server is unavailable: ${task.serverName}`)
       hookServer = server
-      await this.fetchJson(server, "/global/health")
+      await this.fetchJson(server, "/api/info")
       this.appendRunLog(runID, "Server health check passed")
       await this.runHooks(server, task.directory, "automation.before", runID)
       const execution = await this.prepareExecution(task, server)
       this.requireNotCancelled(runID)
       const query = execution.directory ? `?directory=${encodeURIComponent(execution.directory)}` : ""
-      const session = await this.fetchJson<{ id?: string }>(server, `/session${query}`, {
+      const session = await this.fetchJson<{ id?: string }>(server, `/api/session${query}`, {
         method: "POST",
         body: JSON.stringify({
           title: `[自动化] ${task.title}`,
           model: { id: task.modelID, providerID: task.modelProviderID, ...(task.variant ? { variant: task.variant } : {}) },
-          permission: permissionRules(task.permissionProfile),
+          permissions: permissionRules(task.permissionProfile),
           metadata: {
             scheduledTaskID: task.id,
             scheduledTaskRunID: runID,
@@ -690,13 +690,9 @@ export class TaskScheduler {
       if (!session.id) throw new Error("Create session returned no id")
       this.db().prepare("UPDATE scheduled_task_run SET session_id = ?, execution_directory = ?, worktree_directory = ?, branch = ? WHERE id = ?")
         .run(session.id, execution.directory, execution.worktreeDirectory, execution.branch, runID)
-      await this.fetchJson(server, `/session/${encodeURIComponent(session.id)}/prompt_async${query}`, {
+      await this.fetchJson(server, `/api/session/${encodeURIComponent(session.id)}/prompt`, {
         method: "POST",
-        body: JSON.stringify({
-          parts: [{ type: "text", text: task.prompt }],
-          model: { providerID: task.modelProviderID, modelID: task.modelID },
-          ...(task.variant ? { variant: task.variant } : {}),
-        }),
+        body: JSON.stringify({ text: task.prompt }),
       })
       submitted = true
       this.db().prepare("UPDATE scheduled_task_run SET status = 'submitted' WHERE id = ?").run(runID)
@@ -730,19 +726,23 @@ export class TaskScheduler {
 
   private async prepareExecution(task: ScheduledTask, server: ServerState) {
     if (task.executionMode === "worktree") {
-      const existing = await this.fetchJson<string[]>(server, `/experimental/worktree?directory=${encodeURIComponent(task.directory)}`)
+      const projectID = await this.projectID(server, task.directory)
+      const existing = await this.fetchJson<Array<{ directory?: string }>>(
+        server,
+        `/api/worktree?projectID=${encodeURIComponent(projectID)}`,
+      )
       if (existing.length >= 20) throw new Error("Worktree capacity reached (20). Clean up unused worktrees before running this automation.")
-      const query = `?directory=${encodeURIComponent(task.directory)}`
-      const worktree = await this.fetchJson<{ directory?: string; branch?: string }>(server, `/experimental/worktree${query}`, {
+      const worktree = await this.fetchJson<{ directory?: string; branch?: string }>(server, `/api/worktree`, {
         method: "POST",
         body: JSON.stringify({
+          projectID,
           name: `automation-${task.id.slice(0, 8)}-${Date.now().toString(36)}`,
-          ...(task.branch ? { baseBranch: task.branch } : {}),
+          ...(task.branch ? { branch: task.branch } : {}),
         }),
       })
       if (!worktree.directory) throw new Error("Create worktree returned no directory")
       await delay(500)
-      await this.fetchJson(server, `/vcs?directory=${encodeURIComponent(worktree.directory)}`)
+      await this.fetchJson(server, `/api/vcs?directory=${encodeURIComponent(worktree.directory)}`)
       return { directory: worktree.directory, branch: worktree.branch ?? task.branch, worktreeDirectory: worktree.directory }
     }
 
@@ -764,7 +764,7 @@ export class TaskScheduler {
     while (Date.now() < deadline) {
       this.requireNotCancelled(runID)
       try {
-        const statuses = await this.fetchJson<Record<string, { type?: string }>>(server, `/session/status${query}`)
+        const statuses = await this.fetchJson<Record<string, { type?: string }>>(server, `/api/session/active`)
         pollErrors = 0
         if (statuses[sessionID]) {
           idlePolls = 0
@@ -788,7 +788,7 @@ export class TaskScheduler {
   private async requireSuccessfulSession(server: ServerState, sessionID: string, query: string) {
     const messages = await this.fetchJson<Array<{ type?: string; error?: unknown }>>(
       server,
-      `/session/${encodeURIComponent(sessionID)}/message${query}`,
+      `/api/session/${encodeURIComponent(sessionID)}/message`,
     )
     const assistant = messages.findLast((message) => message.type === "assistant")
     if (!assistant?.error) return
@@ -797,6 +797,15 @@ export class TaskScheduler {
       throw new Error(error.message)
     }
     throw new Error(`Session failed: ${JSON.stringify(error)}`)
+  }
+
+  private async projectID(server: ServerState, directory: string): Promise<string> {
+    const location = await this.fetchJson<{ project?: { id?: string } }>(
+      server,
+      `/api/location?location[directory]=${encodeURIComponent(directory)}`,
+    )
+    if (!location.project?.id) throw new Error("Location has no project")
+    return location.project.id
   }
 
   private async fetchJson<T = unknown>(server: ServerState, path: string, init?: RequestInit): Promise<T> {
@@ -847,9 +856,10 @@ export class TaskScheduler {
   private async cleanupWorktree(server: ServerState | undefined, sourceDirectory: string, worktreeDirectory: string, runID: string) {
     if (!server) return
     try {
-      await this.fetchJson(server, `/experimental/worktree?directory=${encodeURIComponent(sourceDirectory)}`, {
+      const projectID = await this.projectID(server, sourceDirectory)
+      await this.fetchJson(server, `/api/worktree`, {
         method: "DELETE",
-        body: JSON.stringify({ directory: worktreeDirectory }),
+        body: JSON.stringify({ projectID, directory: worktreeDirectory, force: false }),
       })
       this.appendRunLog(runID, `Removed owned worktree ${worktreeDirectory}`)
       this.db().prepare("UPDATE scheduled_task_run SET worktree_directory = '' WHERE id = ?").run(runID)
@@ -1190,14 +1200,14 @@ function bounded(value: number, minimum: number, maximum: number, fallback: numb
 }
 
 function permissionRules(profile: PermissionProfile) {
-  if (profile === "full") return [{ permission: "*", pattern: "*", action: "allow" }]
-  if (profile === "ask") return [{ permission: "*", pattern: "*", action: "ask" }]
+  if (profile === "full") return [{ action: "*", resource: "*", effect: "allow" }]
+  if (profile === "ask") return [{ action: "*", resource: "*", effect: "ask" }]
   if (profile === "writes") {
     return [
-      { permission: "edit", pattern: "*", action: "ask" },
-      { permission: "bash", pattern: "*", action: "ask" },
-      { permission: "sandbox", pattern: "*", action: "ask" },
+      { action: "edit", resource: "*", effect: "ask" },
+      { action: "bash", resource: "*", effect: "ask" },
+      { action: "sandbox", resource: "*", effect: "ask" },
     ]
   }
-  return [{ permission: "sandbox", pattern: "*", action: "ask" }]
+  return [{ action: "sandbox", resource: "*", effect: "ask" }]
 }

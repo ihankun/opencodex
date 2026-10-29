@@ -42,6 +42,20 @@ const WorktreeDetail = Schema.Struct({
 const WorktreeResetPayload = Schema.Struct({ directory: Schema.String })
 const ConfigPatch = Schema.Record(Schema.String, Schema.Unknown)
 
+const Capabilities = Schema.Struct({
+  apiVersion: Schema.Number,
+  backgroundSubagents: Schema.Boolean,
+  worktree: Schema.Boolean,
+  worktreeBaseBranch: Schema.Boolean,
+  vcsMutations: Schema.Boolean,
+  workspaceCheckpoints: Schema.Boolean,
+  advancedVcs: Schema.Boolean,
+  checkpointRegistry: Schema.Boolean,
+  memory: Schema.Boolean,
+  hooks: Schema.Boolean,
+  pullRequests: Schema.Boolean,
+})
+
 const GoalHistoryEntry = Schema.Struct({
   type: Schema.String,
   detail: Schema.String,
@@ -120,6 +134,18 @@ const CheckpointRestoreResult = Schema.Struct({ backupID: Schema.String })
 
 
 export const OpencodexGroup = HttpApiGroup.make("server.opencodex")
+  .add(
+    HttpApiEndpoint.get("opencodex.capabilities", "/experimental/capabilities", {
+      query: DirectoryQuery,
+      success: Capabilities,
+    }).annotateMerge(
+      OpenApi.annotations({
+        identifier: "opencodex.capabilities",
+        summary: "Server capabilities",
+        description: "Report the OpenCodex feature set available on this server.",
+      }),
+    ),
+  )
   .add(
     HttpApiEndpoint.patch("opencodex.config.patch", "/experimental/config", {
       query: DirectoryQuery,

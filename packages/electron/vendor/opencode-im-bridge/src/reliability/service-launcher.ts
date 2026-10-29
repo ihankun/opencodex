@@ -30,12 +30,12 @@ export function createServiceLauncher(
     const timer = setTimeout(() => controller.abort(), timeoutMs)
 
     try {
-      const resp = await fetch(`${serverUrl}/global/health`, {
+      const resp = await fetch(`${serverUrl}/api/info`, {
         signal: controller.signal,
       })
       if (!resp.ok) return false
-      const data = await resp.json().catch(() => ({})) as { healthy?: boolean }
-      return data.healthy !== false
+      const data = await resp.json().catch(() => ({})) as { version?: string }
+      return typeof data.version === "string"
     } catch {
       return false
     } finally {

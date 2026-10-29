@@ -608,7 +608,7 @@ class ServerStore {
     const server = this.withRuntimeServerUrl(storedServer)
     const checkSeq = (this.healthCheckSeqMap.get(serverId) ?? 0) + 1
     this.healthCheckSeqMap.set(serverId, checkSeq)
-    const healthUrl = `${validateServerUrl(server.url, server.allowInsecureHttp)}/global/health`
+    const healthUrl = `${validateServerUrl(server.url, server.allowInsecureHttp)}/api/info`
 
     const commitHealth = (health: ServerHealth) => {
       if (this.healthCheckSeqMap.get(serverId) === checkSeq) {
@@ -651,8 +651,8 @@ class ServerStore {
             latency,
             lastCheck: Date.now(),
             error: contentType.includes('text/html')
-              ? 'Server returned HTML instead of OpenCode health JSON. Check the URL path.'
-              : 'Server did not return OpenCode health JSON',
+              ? 'Server returned HTML instead of OpenCode server info JSON. Check the URL path.'
+              : 'Server did not return OpenCode server info JSON',
             details,
           }
           return commitHealth(health)
@@ -666,13 +666,13 @@ class ServerStore {
             status: 'error',
             latency,
             lastCheck: Date.now(),
-            error: 'Invalid OpenCode health JSON',
+            error: 'Invalid OpenCode server info JSON',
             details,
           }
           return commitHealth(health)
         }
 
-        if (!isRecord(data) || data.healthy !== true || typeof data.version !== 'string' || !data.version.trim()) {
+        if (!isRecord(data) || typeof data.version !== 'string' || !data.version.trim()) {
           const health: ServerHealth = {
             status: 'error',
             latency,

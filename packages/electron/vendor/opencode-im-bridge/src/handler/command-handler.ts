@@ -1568,10 +1568,10 @@ export function createCommandHandler(deps: CommandHandlerDeps): CommandHandler {
 
     let serverHealthy = false
     try {
-      const healthResp = await fetch(`${serverUrl}/global/health`)
+      const healthResp = await fetch(`${serverUrl}/api/info`)
       if (healthResp.ok) {
-        const data = (await healthResp.json()) as { healthy?: boolean; version?: string }
-        serverHealthy = data.healthy === true
+        const data = (await healthResp.json()) as { version?: string }
+        serverHealthy = typeof data.version === "string"
         lines.push(serverHealthy ? t(locale, "status.serverOnline") : t(locale, "status.serverOffline"))
         if (data.version) lines.push(t(locale, "status.serverVersion", { version: data.version }))
       } else {

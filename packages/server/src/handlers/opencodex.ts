@@ -65,6 +65,21 @@ export const OpencodexHandler = HttpApiBuilder.group(Api, "server.opencodex", (h
       return path.join(root, "opencode.json")
     })
 
+    const capabilities = () =>
+      Effect.succeed({
+        apiVersion: 2,
+        backgroundSubagents: true,
+        worktree: true,
+        worktreeBaseBranch: true,
+        vcsMutations: true,
+        workspaceCheckpoints: true,
+        advancedVcs: true,
+        checkpointRegistry: true,
+        memory: true,
+        hooks: true,
+        pullRequests: true,
+      })
+
     const configPatch = (ctx: { payload: Record<string, unknown>; query: { directory?: string; global?: string } }) =>
       Effect.gen(function* () {
         const location = yield* Location.Service
@@ -509,6 +524,7 @@ export const OpencodexHandler = HttpApiBuilder.group(Api, "server.opencodex", (h
       })
 
     return handlers
+      .handle("opencodex.capabilities", capabilities)
       .handle("opencodex.config.patch", configPatch)
       .handle("opencodex.provider.refresh", providerRefresh)
       .handle("opencodex.project.subrepos", projectSubrepos)
