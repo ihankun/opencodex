@@ -18,7 +18,7 @@ import type {
   SnapshotFileDiff,
   Todo,
 } from "../../types/api/legacy-sdk"
-import { projectAssistantParts, projectForm } from "./project"
+import { projectAssistantParts, projectForm, projectStructuredError } from "./project"
 
 const zeroTokens = () => ({
   input: 0,
@@ -193,13 +193,19 @@ export function createEventProjector() {
       }
       case "session.execution.failed": {
         const sessionID = event.data.sessionID
-        return [
-          envelope(event, "session.error", {
-            sessionID,
-            error: { name: "UnknownError", data: { message: event.data.error.message } },
-          }),
-          envelope(event, "session.idle", { sessionID }),
-        ]
+        // The free-limit dialog and the assistant message error already explain
+        // this failure; a generic session.error would add a redundant
+        // "UnknownError" notification on top of it.
+        const events =
+          event.data.error.type === "provider.free-limit"
+            ? []
+            : [
+                envelope(event, "session.error", {
+                  sessionID,
+                  error: { name: "UnknownError", data: { message: event.data.error.message } },
+                }),
+              ]
+        return [...events, envelope(event, "session.idle", { sessionID })]
       }
       case "session.idle": {
         const sessionID = event.data.sessionID
@@ -263,6 +269,18 @@ export function createEventProjector() {
               cost,
               tokens,
             } satisfies Part,
+          }),
+        ]
+      }
+      case "session.step.failed": {
+        const { sessionID, assistantMessageID, error, cost } = event.data
+        return [
+          envelope(event, "message.updated", {
+            info: {
+              ...assistantInfo(sessionID, assistantMessageID, createdOf(event)),
+              error: projectStructuredError(error),
+              ...(cost === undefined ? {} : { cost }),
+            },
           }),
         ]
       }

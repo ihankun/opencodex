@@ -14,6 +14,7 @@ import type {
   SessionMessageAssistantTool,
   SessionMessageInfo,
   SessionMessageUser,
+  SessionStructuredError,
   SkillInfo,
   VcsInfo as V2VcsInfo,
 } from "@opencode/client"
@@ -21,6 +22,7 @@ import type { MessageWithParts } from "../../types/api/message"
 import type { Skill } from "../../types/api/skill"
 import type {
   Agent,
+  AssistantMessage,
   FilePart,
   McpStatus,
   McpStatusResponse,
@@ -269,12 +271,24 @@ export function projectMessage(message: SessionMessageInfo, sessionID: string): 
       tokens: message.tokens ?? zeroTokens(),
       variant: message.model.variant,
       finish: message.finish,
-      error: message.error
-        ? { name: "UnknownError", data: { message: message.error.message } }
-        : undefined,
+      error: message.error ? projectStructuredError(message.error) : undefined,
     },
     parts: projectAssistantParts(message, sessionID),
   }
+}
+
+export function projectStructuredError(error: SessionStructuredError): AssistantMessage["error"] {
+  return {
+    name: "APIError",
+    data: {
+      message: error.message,
+      statusCode: error.status,
+      isRetryable: error.type !== "provider.free-limit",
+      responseBody: error.response?.body,
+      type: error.type,
+      retryAfterMs: error.retryAfterMs,
+    },
+  } as AssistantMessage["error"]
 }
 
 export function projectMessages(messages: SessionMessageInfo[], sessionID: string): MessageWithParts[] {

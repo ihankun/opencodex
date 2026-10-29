@@ -550,5 +550,14 @@
     "autoApproveAll": "Auto-approve: all sessions",
     "autoApproveSession": "Auto-approve: this session",
     "autoApproveOffHint": "Auto-approve: off"
+  },
+  "freeLimit": {
+    "title": "Free limit reached",
+    "description": "You've used today's free messages.",
+    "descriptionReset": "You've used today's free messages. They reset at {{time}}.",
+    "switchModel": "Switch model",
+    "subscribe": "Subscribe to OpenCode Go",
+    "dismiss": "Got it",
+    "dontShow": "Don't show again"
   }
 }

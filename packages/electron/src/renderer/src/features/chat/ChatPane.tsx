@@ -11,6 +11,7 @@ import { createPortal } from 'react-dom'
 import { useTranslation } from 'react-i18next'
 
 import { ChatArea, Header, InputBox, PermissionDialog, QuestionDialog, type ChatAreaHandle } from '.'
+import { FreeLimitDialog } from './FreeLimitDialog'
 import { AlertCircleIcon, CheckIcon, CircleIcon, CloseIcon, FileIcon, PatchIcon, PlugIcon, SpinnerIcon } from '../../components/Icons'
 import { type ModelSelectorHandle } from './ModelSelector'
 import { OutlineIndex, type OutlineIndexHandle } from '../../components/OutlineIndex'
@@ -42,6 +43,13 @@ import { getInternalDragSnapshot, subscribeInternalDrag, subscribeInternalDrop }
 import { ErrorBoundary } from '../../components/ErrorBoundary'
 import { I18nTrans } from '../../components/I18nTrans'
 import { selectableAgentsInDisplayOrder } from './agentOrder'
+import { insertComposerDraft } from '../../utils/composerDraft'
+import { openUrl } from '../../utils/browserOpen'
+import { composerDraftStore } from '../../store/composerDraftStore'
+
+const FREE_LIMIT_DONT_SHOW_KEY = 'opencodex.freeLimit.dontShow'
+const FREE_LIMIT_LAST_SEEN_KEY = 'opencodex.freeLimit.lastSeen'
+const FREE_LIMIT_WINDOW = 24 * 60 * 60 * 1000
 
 interface ChatPaneProps {
   paneId: string
@@ -161,6 +169,8 @@ export const ChatPane = memo(function ChatPane({
   // ============================================
   const chatAreaRef = useRef<ChatAreaHandle>(null)
   const modelSelectorRef = useRef<ModelSelectorHandle>(null)
+  const [freeLimit, setFreeLimit] = useState<{ resetAt?: number } | null>(null)
+  const freeLimitHandledRef = useRef<string | null>(null)
 
   // ============================================
   // Models
@@ -683,6 +693,41 @@ export const ChatPane = memo(function ChatPane({
     modelSelectorRef.current?.openMenu()
   }, [])
 
+  useEffect(() => {
+    if (!routeSessionId) return
+    const failed = [...messages].reverse().find((message) => {
+      if (message.info.role !== 'assistant') return false
+      const error = message.info.error
+      return error?.name === 'APIError' && error.data.type === 'provider.free-limit'
+    })
+    if (!failed || failed.info.role !== 'assistant') return
+    const error = failed.info.error
+    if (!error || error.name !== 'APIError') return
+    const key = `${failed.info.id}:${error.data.retryAfterMs ?? 0}`
+    if (freeLimitHandledRef.current === key) return
+    freeLimitHandledRef.current = key
+    if (localStorage.getItem(FREE_LIMIT_DONT_SHOW_KEY) === '1') return
+    const lastSeen = Number(localStorage.getItem(FREE_LIMIT_LAST_SEEN_KEY) ?? 0)
+    if (Number.isFinite(lastSeen) && lastSeen > 0 && Date.now() - lastSeen < FREE_LIMIT_WINDOW) return
+
+    const draft = composerDraftStore.getDraft(paneId)
+    if (!draft?.text?.trim() && !(draft?.attachments.length)) {
+      const index = messages.findIndex((message) => message.info.id === failed.info.id)
+      const user = [...messages.slice(0, index)]
+        .reverse()
+        .find((message) => message.info.role === 'user')
+      const text = user?.parts
+        .flatMap((part) => (part.type === 'text' && !part.synthetic ? [part.text] : []))
+        .join('\n')
+        .trim()
+      if (text) insertComposerDraft({ paneId, sessionId: routeSessionId, text, mode: 'replace' })
+    }
+
+    setFreeLimit({
+      resetAt: error.data.retryAfterMs ? failed.info.time.created + error.data.retryAfterMs : undefined,
+    })
+  }, [messages, paneId, routeSessionId])
+
   const contextLimit = currentModel?.contextLimit
   const contextStats = useSessionStats(contextLimit)
 
@@ -1096,6 +1141,30 @@ export const ChatPane = memo(function ChatPane({
           homeMode={homeComposer}
         />
       </div>
+
+      <FreeLimitDialog
+        isOpen={freeLimit !== null}
+        resetAt={freeLimit?.resetAt}
+        onClose={() => {
+          localStorage.setItem(FREE_LIMIT_LAST_SEEN_KEY, String(Date.now()))
+          setFreeLimit(null)
+        }}
+        onSwitchModel={() => {
+          localStorage.setItem(FREE_LIMIT_LAST_SEEN_KEY, String(Date.now()))
+          setFreeLimit(null)
+          openModelSelector()
+        }}
+        onSubscribe={() => {
+          localStorage.setItem(FREE_LIMIT_LAST_SEEN_KEY, String(Date.now()))
+          setFreeLimit(null)
+          void openUrl('https://opencode.ai/go')
+        }}
+        onDontShow={() => {
+          localStorage.setItem(FREE_LIMIT_DONT_SHOW_KEY, '1')
+          localStorage.setItem(FREE_LIMIT_LAST_SEEN_KEY, String(Date.now()))
+          setFreeLimit(null)
+        }}
+      />
 
       {pendingPermissionRequests.length > 0 && (
         <PermissionDialog

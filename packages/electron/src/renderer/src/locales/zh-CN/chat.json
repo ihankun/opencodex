@@ -548,5 +548,14 @@
     "autoApproveAll": "自动放行：全部会话",
     "autoApproveSession": "自动放行：本次会话",
     "autoApproveOffHint": "自动放行：关闭"
+  },
+  "freeLimit": {
+    "title": "免费额度已用尽",
+    "description": "今天的免费消息已用完。",
+    "descriptionReset": "今天的免费消息已用完，额度将在 {{time}} 重置。",
+    "switchModel": "切换模型",
+    "subscribe": "订阅 OpenCode Go",
+    "dismiss": "知道了",
+    "dontShow": "不再显示"
   }
 }

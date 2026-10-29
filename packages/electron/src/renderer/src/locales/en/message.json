@@ -160,6 +160,8 @@
     "apiError": "API Error",
     "apiErrorWithCode": "API Error ({{code}})",
     "unknownError": "Error",
-    "unknownErrorDesc": "An unknown error occurred."
+    "unknownErrorDesc": "An unknown error occurred.",
+    "freeLimit": "Free limit reached",
+    "freeLimitDesc": "Switch models or wait for the reset."
   }
 }

@@ -68,6 +68,10 @@ export interface APIError {
     responseHeaders?: Record<string, string>
     responseBody?: string
     metadata?: Record<string, string>
+    /** Structured provider error type, e.g. provider.free-limit. */
+    type?: string
+    /** Remaining time before the provider limit resets. */
+    retryAfterMs?: number
   }
 }
 

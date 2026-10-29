@@ -133,6 +133,8 @@
     "apiError": "API 错误",
     "apiErrorWithCode": "API 错误 ({{code}})",
     "unknownError": "错误",
-    "unknownErrorDesc": "发生未知错误。"
+    "unknownErrorDesc": "发生未知错误。",
+    "freeLimit": "免费额度已用尽",
+    "freeLimitDesc": "请切换模型或等待额度重置。"
   }
 }

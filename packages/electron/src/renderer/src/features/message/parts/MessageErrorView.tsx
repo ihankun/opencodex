@@ -91,6 +91,14 @@ function getErrorInfo(
   details?: string
   severity: 'error' | 'warning'
 } {
+  if (error.name === 'APIError' && error.data.type === 'provider.free-limit') {
+    return {
+      title: t('errors.freeLimit'),
+      description: t('errors.freeLimitDesc'),
+      severity: 'warning',
+    }
+  }
+
   switch (error.name) {
     case 'ProviderAuthError':
       return {
