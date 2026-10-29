@@ -307,7 +307,10 @@ async function buildPromptInput(input: Json) {
           search: input.search as string | undefined,
           limit: input.limit as number | undefined,
           parentID: input.roots === true || input.roots === "true" ? null : undefined,
-          archived: input.archived === true || input.archived === "true" ? true : undefined,
+          archived:
+            input.archived === true || input.archived === "true"
+              ? true
+              : false,
         })
         const data = result.data.map(projectSession)
         return { data: typeof input.start === "number" ? data.slice(input.start) : data }
@@ -1063,7 +1066,10 @@ async function buildPromptInput(input: Json) {
           const result = await v2.session.list({
             search: input.search as string | undefined,
             limit: input.limit as number | undefined,
-            archived: input.archived === true || input.archived === "true" ? true : undefined,
+            archived:
+              input.archived === true || input.archived === "true"
+                ? true
+                : false,
           })
           return { data: result.data.map(projectSession) }
         },
