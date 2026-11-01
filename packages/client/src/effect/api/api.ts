@@ -1909,8 +1909,167 @@ export type SkillListInput = { readonly location?: { readonly directory?: string
 export type SkillListOutput = { readonly location: Location.PublicRef; readonly data: ReadonlyArray<Skill.Info> }
 export type SkillListOperation<E = never> = (input?: SkillListInput) => Effect.Effect<SkillListOutput, E>
 
+export type SkillMarketplaceSearchInput = {
+  readonly location?: { readonly directory?: string | undefined } | undefined
+  readonly q: string
+  readonly provider: "official" | "netease"
+  readonly sort?: "recommended" | "aiScore" | "downloads" | "stars" | "rating" | "recent" | undefined
+  readonly category?: string | undefined
+  readonly limit?: number | undefined
+  readonly page?: number | undefined
+}
+export type SkillMarketplaceSearchOutput = {
+  readonly location: Location.PublicRef
+  readonly data: {
+    readonly data: ReadonlyArray<{
+      readonly id: string
+      readonly provider: "official" | "netease"
+      readonly slug: string
+      readonly name: string
+      readonly source: string
+      readonly description: string
+      readonly url: string
+      readonly version: string | null
+      readonly category: string | null
+      readonly tags: ReadonlyArray<string>
+      readonly icon: string | null
+      readonly githubStars: number
+      readonly downloadCount: number
+      readonly isVerified: boolean
+      readonly securityScore: number | null
+      readonly securityStatus: string | null
+      readonly aiScore: number | null
+      readonly reviewStatus: string | null
+    }>
+    readonly page: number
+    readonly perPage: number
+    readonly total: number
+    readonly categories: ReadonlyArray<string>
+  }
+}
+export type SkillMarketplaceSearchOperation<E = never> = (
+  input: SkillMarketplaceSearchInput,
+) => Effect.Effect<SkillMarketplaceSearchOutput, E>
+
+export type SkillMarketplaceDetailInput = {
+  readonly location?: { readonly directory?: string | undefined } | undefined
+  readonly id: string
+  readonly provider: "official" | "netease"
+}
+export type SkillMarketplaceDetailOutput = {
+  readonly location: Location.PublicRef
+  readonly data: {
+    readonly id: string
+    readonly provider: "official" | "netease"
+    readonly source: string
+    readonly slug: string
+    readonly version: string | null
+    readonly category: string | null
+    readonly tags: ReadonlyArray<string>
+    readonly icon: string | null
+    readonly hash: string
+    readonly files: ReadonlyArray<{ readonly path: string; readonly contents: string }>
+    readonly githubStars: number
+    readonly downloadCount: number
+    readonly isVerified: boolean
+    readonly isFeatured: boolean
+    readonly securityScore: number | null
+    readonly securityStatus: string | null
+    readonly qualityScore: number | null
+    readonly aiScore: number | null
+    readonly reviewStatus: string | null
+    readonly license: string | null
+  }
+}
+export type SkillMarketplaceDetailOperation<E = never> = (
+  input: SkillMarketplaceDetailInput,
+) => Effect.Effect<SkillMarketplaceDetailOutput, E>
+
+export type SkillMarketplaceInstalledInput = {
+  readonly location?: { readonly directory?: string | undefined } | undefined
+}
+export type SkillMarketplaceInstalledOutput = {
+  readonly location: Location.PublicRef
+  readonly data: ReadonlyArray<{
+    readonly id: string
+    readonly provider: "official" | "netease"
+    readonly slug: string
+    readonly scope: "global" | "project"
+    readonly directory: string
+    readonly manifest: {
+      readonly id: string
+      readonly provider: "official" | "netease"
+      readonly source: string
+      readonly slug: string
+      readonly version: string | null
+      readonly hash: string | null
+      readonly scope: "global" | "project"
+      readonly installedAt: string
+      readonly updatedAt: string
+      readonly files: { readonly [x: string]: string }
+    }
+    readonly conflict: boolean
+    readonly updateAvailable: boolean
+  }>
+}
+export type SkillMarketplaceInstalledOperation<E = never> = (
+  input?: SkillMarketplaceInstalledInput,
+) => Effect.Effect<SkillMarketplaceInstalledOutput, E>
+
+export type SkillMarketplaceInstallInput = {
+  readonly location?: { readonly directory?: string | undefined } | undefined
+  readonly id: string
+  readonly provider: "official" | "netease"
+  readonly scope: "global" | "project"
+  readonly force?: boolean | undefined
+}
+export type SkillMarketplaceInstallOutput = {
+  readonly location: Location.PublicRef
+  readonly data: {
+    readonly id: string
+    readonly provider: "official" | "netease"
+    readonly slug: string
+    readonly scope: "global" | "project"
+    readonly directory: string
+    readonly manifest: {
+      readonly id: string
+      readonly provider: "official" | "netease"
+      readonly source: string
+      readonly slug: string
+      readonly version: string | null
+      readonly hash: string | null
+      readonly scope: "global" | "project"
+      readonly installedAt: string
+      readonly updatedAt: string
+      readonly files: { readonly [x: string]: string }
+    }
+    readonly conflict: boolean
+    readonly updateAvailable: boolean
+  }
+}
+export type SkillMarketplaceInstallOperation<E = never> = (
+  input: SkillMarketplaceInstallInput,
+) => Effect.Effect<SkillMarketplaceInstallOutput, E>
+
+export type SkillMarketplaceRemoveInput = {
+  readonly location?: { readonly directory?: string | undefined } | undefined
+  readonly id: string
+  readonly provider: "official" | "netease"
+  readonly scope: "global" | "project"
+  readonly force?: boolean | undefined
+}
+export type SkillMarketplaceRemoveOutput = void
+export type SkillMarketplaceRemoveOperation<E = never> = (
+  input: SkillMarketplaceRemoveInput,
+) => Effect.Effect<SkillMarketplaceRemoveOutput, E>
+
 export interface SkillApi<E = never> {
   readonly list: SkillListOperation<E>
+  readonly marketplaceSearch: SkillMarketplaceSearchOperation<E>
+  readonly marketplaceDetail: SkillMarketplaceDetailOperation<E>
+  readonly marketplaceInstalled: SkillMarketplaceInstalledOperation<E>
+  readonly marketplaceInstall: SkillMarketplaceInstallOperation<E>
+  readonly marketplaceRemove: SkillMarketplaceRemoveOperation<E>
 }
 
 export type RpcCallInput = {
@@ -2510,6 +2669,485 @@ export interface ConfigApi<E = never> {
   readonly update: ConfigUpdateOperation<E>
 }
 
+export type ServerOpencodexCapabilitiesInput = {
+  readonly directory?: string | undefined
+  readonly global?: string | undefined
+}
+export type ServerOpencodexCapabilitiesOutput = {
+  readonly apiVersion: number
+  readonly backgroundSubagents: boolean
+  readonly worktree: boolean
+  readonly worktreeBaseBranch: boolean
+  readonly vcsMutations: boolean
+  readonly workspaceCheckpoints: boolean
+  readonly advancedVcs: boolean
+  readonly checkpointRegistry: boolean
+  readonly memory: boolean
+  readonly hooks: boolean
+  readonly pullRequests: boolean
+}
+export type ServerOpencodexCapabilitiesOperation<E = never> = (
+  input?: ServerOpencodexCapabilitiesInput,
+) => Effect.Effect<ServerOpencodexCapabilitiesOutput, E>
+
+export type ServerOpencodexConfigPatchInput = {
+  readonly directory?: string | undefined
+  readonly global?: string | undefined
+  readonly payload: { readonly [x: string]: unknown }
+}
+export type ServerOpencodexConfigPatchOutput = void
+export type ServerOpencodexConfigPatchOperation<E = never> = (
+  input: ServerOpencodexConfigPatchInput,
+) => Effect.Effect<ServerOpencodexConfigPatchOutput, E>
+
+export type ServerOpencodexProviderRefreshInput = {
+  readonly directory?: string | undefined
+  readonly global?: string | undefined
+}
+export type ServerOpencodexProviderRefreshOutput = void
+export type ServerOpencodexProviderRefreshOperation<E = never> = (
+  input?: ServerOpencodexProviderRefreshInput,
+) => Effect.Effect<ServerOpencodexProviderRefreshOutput, E>
+
+export type ServerOpencodexProjectSubreposInput = {
+  readonly directory?: string | undefined
+  readonly global?: string | undefined
+}
+export type ServerOpencodexProjectSubreposOutput = {
+  readonly directory: string
+  readonly repos: ReadonlyArray<{ readonly worktree: string }>
+}
+export type ServerOpencodexProjectSubreposOperation<E = never> = (
+  input?: ServerOpencodexProjectSubreposInput,
+) => Effect.Effect<ServerOpencodexProjectSubreposOutput, E>
+
+export type ServerOpencodexVcsBranchSwitchInput = {
+  readonly directory?: string | undefined
+  readonly global?: string | undefined
+  readonly branch: string
+}
+export type ServerOpencodexVcsBranchSwitchOutput = { readonly branch: string }
+export type ServerOpencodexVcsBranchSwitchOperation<E = never> = (
+  input: ServerOpencodexVcsBranchSwitchInput,
+) => Effect.Effect<ServerOpencodexVcsBranchSwitchOutput, E>
+
+export type ServerOpencodexVcsStageInput = {
+  readonly directory?: string | undefined
+  readonly global?: string | undefined
+  readonly files: ReadonlyArray<string>
+}
+export type ServerOpencodexVcsStageOutput = { readonly output: string }
+export type ServerOpencodexVcsStageOperation<E = never> = (
+  input: ServerOpencodexVcsStageInput,
+) => Effect.Effect<ServerOpencodexVcsStageOutput, E>
+
+export type ServerOpencodexVcsUnstageInput = {
+  readonly directory?: string | undefined
+  readonly global?: string | undefined
+  readonly files: ReadonlyArray<string>
+}
+export type ServerOpencodexVcsUnstageOutput = { readonly output: string }
+export type ServerOpencodexVcsUnstageOperation<E = never> = (
+  input: ServerOpencodexVcsUnstageInput,
+) => Effect.Effect<ServerOpencodexVcsUnstageOutput, E>
+
+export type ServerOpencodexVcsDiscardInput = {
+  readonly directory?: string | undefined
+  readonly global?: string | undefined
+  readonly files: ReadonlyArray<string>
+}
+export type ServerOpencodexVcsDiscardOutput = { readonly output: string }
+export type ServerOpencodexVcsDiscardOperation<E = never> = (
+  input: ServerOpencodexVcsDiscardInput,
+) => Effect.Effect<ServerOpencodexVcsDiscardOutput, E>
+
+export type ServerOpencodexVcsCommitInput = {
+  readonly directory?: string | undefined
+  readonly global?: string | undefined
+  readonly message: string
+}
+export type ServerOpencodexVcsCommitOutput = { readonly output: string }
+export type ServerOpencodexVcsCommitOperation<E = never> = (
+  input: ServerOpencodexVcsCommitInput,
+) => Effect.Effect<ServerOpencodexVcsCommitOutput, E>
+
+export type ServerOpencodexVcsPushInput = {
+  readonly directory?: string | undefined
+  readonly global?: string | undefined
+}
+export type ServerOpencodexVcsPushOutput = { readonly output: string }
+export type ServerOpencodexVcsPushOperation<E = never> = (
+  input?: ServerOpencodexVcsPushInput,
+) => Effect.Effect<ServerOpencodexVcsPushOutput, E>
+
+export type ServerOpencodexVcsOperationInput = {
+  readonly directory?: string | undefined
+  readonly global?: string | undefined
+  readonly action: string
+  readonly argument?: string | undefined
+}
+export type ServerOpencodexVcsOperationOutput = { readonly output: string }
+export type ServerOpencodexVcsOperationOperation<E = never> = (
+  input: ServerOpencodexVcsOperationInput,
+) => Effect.Effect<ServerOpencodexVcsOperationOutput, E>
+
+export type ServerOpencodexVcsHistoryInput = {
+  readonly directory?: string | undefined
+  readonly limit?: number | undefined
+}
+export type ServerOpencodexVcsHistoryOutput = ReadonlyArray<{
+  readonly hash: string
+  readonly shortHash: string
+  readonly author: string
+  readonly timestamp: number
+  readonly subject: string
+}>
+export type ServerOpencodexVcsHistoryOperation<E = never> = (
+  input?: ServerOpencodexVcsHistoryInput,
+) => Effect.Effect<ServerOpencodexVcsHistoryOutput, E>
+
+export type ServerOpencodexWorktreeDetailsInput = {
+  readonly directory?: string | undefined
+  readonly global?: string | undefined
+}
+export type ServerOpencodexWorktreeDetailsOutput = ReadonlyArray<{
+  readonly name: string
+  readonly branch?: string | undefined
+  readonly directory: string
+  readonly dirty: boolean
+  readonly managed: boolean
+  readonly sizeBytes: number
+  readonly fileCount: number
+  readonly measuredCompletely: boolean
+  readonly createdAt: number
+  readonly modifiedAt: number
+}>
+export type ServerOpencodexWorktreeDetailsOperation<E = never> = (
+  input?: ServerOpencodexWorktreeDetailsInput,
+) => Effect.Effect<ServerOpencodexWorktreeDetailsOutput, E>
+
+export type ServerOpencodexWorktreeResetInput = {
+  readonly directory?: string | undefined
+  readonly global?: string | undefined
+  readonly worktree: string
+}
+export type ServerOpencodexWorktreeResetOutput = void
+export type ServerOpencodexWorktreeResetOperation<E = never> = (
+  input: ServerOpencodexWorktreeResetInput,
+) => Effect.Effect<ServerOpencodexWorktreeResetOutput, E>
+
+export type ServerOpencodexGoalGetInput = {
+  readonly sessionID: string
+  readonly directory?: string | undefined
+  readonly global?: string | undefined
+}
+export type ServerOpencodexGoalGetOutput = {
+  readonly goal: {
+    readonly sessionID: string
+    readonly objective: string
+    readonly status: "active" | "paused" | "complete" | "blocked"
+    readonly step: number
+    readonly statusMessage: string | null
+    readonly createdAt: number
+    readonly updatedAt: number
+    readonly pausedAt: number | null
+    readonly completedAt: number | null
+    readonly evidence: string | null
+    readonly blocker: string | null
+    readonly history: ReadonlyArray<{ readonly type: string; readonly detail: string; readonly timestamp: number }>
+  } | null
+}
+export type ServerOpencodexGoalGetOperation<E = never> = (
+  input: ServerOpencodexGoalGetInput,
+) => Effect.Effect<ServerOpencodexGoalGetOutput, E>
+
+export type ServerOpencodexGoalStatusInput = {
+  readonly sessionID: string
+  readonly directory?: string | undefined
+  readonly global?: string | undefined
+  readonly status: "active" | "paused"
+}
+export type ServerOpencodexGoalStatusOutput = {
+  readonly goal: {
+    readonly sessionID: string
+    readonly objective: string
+    readonly status: "active" | "paused" | "complete" | "blocked"
+    readonly step: number
+    readonly statusMessage: string | null
+    readonly createdAt: number
+    readonly updatedAt: number
+    readonly pausedAt: number | null
+    readonly completedAt: number | null
+    readonly evidence: string | null
+    readonly blocker: string | null
+    readonly history: ReadonlyArray<{ readonly type: string; readonly detail: string; readonly timestamp: number }>
+  } | null
+}
+export type ServerOpencodexGoalStatusOperation<E = never> = (
+  input: ServerOpencodexGoalStatusInput,
+) => Effect.Effect<ServerOpencodexGoalStatusOutput, E>
+
+export type ServerOpencodexGoalClearInput = {
+  readonly sessionID: string
+  readonly directory?: string | undefined
+  readonly global?: string | undefined
+}
+export type ServerOpencodexGoalClearOutput = boolean
+export type ServerOpencodexGoalClearOperation<E = never> = (
+  input: ServerOpencodexGoalClearInput,
+) => Effect.Effect<ServerOpencodexGoalClearOutput, E>
+
+export type ServerOpencodexHooksGetInput = {
+  readonly directory?: string | undefined
+  readonly global?: string | undefined
+}
+export type ServerOpencodexHooksGetOutput = {
+  readonly hooks: ReadonlyArray<{
+    readonly id: string
+    readonly name: string
+    readonly event: "automation.before" | "automation.after" | "git.before" | "git.after" | "notification"
+    readonly command: string
+    readonly enabled: boolean
+    readonly approved: boolean
+    readonly sandbox: boolean
+    readonly timeoutSeconds: number
+  }>
+  readonly runs: ReadonlyArray<{
+    readonly id: string
+    readonly hookID: string
+    readonly hookName: string
+    readonly event: "automation.before" | "automation.after" | "git.before" | "git.after" | "notification"
+    readonly status: "completed" | "failed" | "timed_out" | "blocked"
+    readonly sandboxed: boolean
+    readonly output: string
+    readonly startedAt: number
+    readonly completedAt: number
+  }>
+}
+export type ServerOpencodexHooksGetOperation<E = never> = (
+  input?: ServerOpencodexHooksGetInput,
+) => Effect.Effect<ServerOpencodexHooksGetOutput, E>
+
+export type ServerOpencodexHooksUpdateInput = {
+  readonly directory?: string | undefined
+  readonly global?: string | undefined
+  readonly hooks: ReadonlyArray<{
+    readonly id: string
+    readonly name: string
+    readonly event: "automation.before" | "automation.after" | "git.before" | "git.after" | "notification"
+    readonly command: string
+    readonly enabled: boolean
+    readonly approved: boolean
+    readonly sandbox: boolean
+    readonly timeoutSeconds: number
+  }>
+}
+export type ServerOpencodexHooksUpdateOutput = {
+  readonly hooks: ReadonlyArray<{
+    readonly id: string
+    readonly name: string
+    readonly event: "automation.before" | "automation.after" | "git.before" | "git.after" | "notification"
+    readonly command: string
+    readonly enabled: boolean
+    readonly approved: boolean
+    readonly sandbox: boolean
+    readonly timeoutSeconds: number
+  }>
+  readonly runs: ReadonlyArray<{
+    readonly id: string
+    readonly hookID: string
+    readonly hookName: string
+    readonly event: "automation.before" | "automation.after" | "git.before" | "git.after" | "notification"
+    readonly status: "completed" | "failed" | "timed_out" | "blocked"
+    readonly sandboxed: boolean
+    readonly output: string
+    readonly startedAt: number
+    readonly completedAt: number
+  }>
+}
+export type ServerOpencodexHooksUpdateOperation<E = never> = (
+  input: ServerOpencodexHooksUpdateInput,
+) => Effect.Effect<ServerOpencodexHooksUpdateOutput, E>
+
+export type ServerOpencodexHooksRunInput = {
+  readonly directory?: string | undefined
+  readonly global?: string | undefined
+  readonly event: "automation.before" | "automation.after" | "git.before" | "git.after" | "notification"
+}
+export type ServerOpencodexHooksRunOutput = ReadonlyArray<{
+  readonly id: string
+  readonly hookID: string
+  readonly hookName: string
+  readonly event: "automation.before" | "automation.after" | "git.before" | "git.after" | "notification"
+  readonly status: "completed" | "failed" | "timed_out" | "blocked"
+  readonly sandboxed: boolean
+  readonly output: string
+  readonly startedAt: number
+  readonly completedAt: number
+}>
+export type ServerOpencodexHooksRunOperation<E = never> = (
+  input: ServerOpencodexHooksRunInput,
+) => Effect.Effect<ServerOpencodexHooksRunOutput, E>
+
+export type ServerOpencodexMemoryGetInput = {
+  readonly sourceID: "global" | "project" | "workspace"
+  readonly directory?: string | undefined
+  readonly global?: string | undefined
+}
+export type ServerOpencodexMemoryGetOutput = {
+  readonly id: "global" | "project" | "workspace"
+  readonly name: string
+  readonly path: string
+  readonly scope: "global" | "project" | "workspace"
+  readonly exists: boolean
+  readonly content: string
+}
+export type ServerOpencodexMemoryGetOperation<E = never> = (
+  input: ServerOpencodexMemoryGetInput,
+) => Effect.Effect<ServerOpencodexMemoryGetOutput, E>
+
+export type ServerOpencodexMemoryUpdateInput = {
+  readonly sourceID: "global" | "project" | "workspace"
+  readonly directory?: string | undefined
+  readonly global?: string | undefined
+  readonly content: string
+}
+export type ServerOpencodexMemoryUpdateOutput = {
+  readonly id: "global" | "project" | "workspace"
+  readonly name: string
+  readonly path: string
+  readonly scope: "global" | "project" | "workspace"
+  readonly exists: boolean
+  readonly content: string
+}
+export type ServerOpencodexMemoryUpdateOperation<E = never> = (
+  input: ServerOpencodexMemoryUpdateInput,
+) => Effect.Effect<ServerOpencodexMemoryUpdateOutput, E>
+
+export type ServerOpencodexMemoryCaptureInput = {
+  readonly directory?: string | undefined
+  readonly global?: string | undefined
+  readonly content: string
+}
+export type ServerOpencodexMemoryCaptureOutput = {
+  readonly id: "global" | "project" | "workspace"
+  readonly name: string
+  readonly path: string
+  readonly scope: "global" | "project" | "workspace"
+  readonly exists: boolean
+  readonly content: string
+}
+export type ServerOpencodexMemoryCaptureOperation<E = never> = (
+  input: ServerOpencodexMemoryCaptureInput,
+) => Effect.Effect<ServerOpencodexMemoryCaptureOutput, E>
+
+export type ServerOpencodexCheckpointListInput = {
+  readonly directory?: string | undefined
+  readonly sessionID?: string | undefined
+}
+export type ServerOpencodexCheckpointListOutput = ReadonlyArray<{
+  readonly id: string
+  readonly snapshot: string
+  readonly sessionID: string
+  readonly directory: string
+  readonly label: string
+  readonly createdAt: number
+}>
+export type ServerOpencodexCheckpointListOperation<E = never> = (
+  input?: ServerOpencodexCheckpointListInput,
+) => Effect.Effect<ServerOpencodexCheckpointListOutput, E>
+
+export type ServerOpencodexCheckpointCreateInput = {
+  readonly directory?: string | undefined
+  readonly global?: string | undefined
+  readonly sessionID: string
+  readonly label: string
+}
+export type ServerOpencodexCheckpointCreateOutput = {
+  readonly id: string
+  readonly snapshot: string
+  readonly sessionID: string
+  readonly directory: string
+  readonly label: string
+  readonly createdAt: number
+}
+export type ServerOpencodexCheckpointCreateOperation<E = never> = (
+  input: ServerOpencodexCheckpointCreateInput,
+) => Effect.Effect<ServerOpencodexCheckpointCreateOutput, E>
+
+export type ServerOpencodexCheckpointRestoreInput = {
+  readonly directory?: string | undefined
+  readonly global?: string | undefined
+  readonly id: string
+}
+export type ServerOpencodexCheckpointRestoreOutput = { readonly backupID: string }
+export type ServerOpencodexCheckpointRestoreOperation<E = never> = (
+  input: ServerOpencodexCheckpointRestoreInput,
+) => Effect.Effect<ServerOpencodexCheckpointRestoreOutput, E>
+
+export type ServerOpencodexCheckpointDeleteInput = {
+  readonly checkpointID: string
+  readonly directory?: string | undefined
+  readonly global?: string | undefined
+}
+export type ServerOpencodexCheckpointDeleteOutput = boolean
+export type ServerOpencodexCheckpointDeleteOperation<E = never> = (
+  input: ServerOpencodexCheckpointDeleteInput,
+) => Effect.Effect<ServerOpencodexCheckpointDeleteOutput, E>
+
+export type ServerOpencodexCheckpointDiffInput = {
+  readonly checkpointID: string
+  readonly directory?: string | undefined
+  readonly global?: string | undefined
+}
+export type ServerOpencodexCheckpointDiffOutput = string
+export type ServerOpencodexCheckpointDiffOperation<E = never> = (
+  input: ServerOpencodexCheckpointDiffInput,
+) => Effect.Effect<ServerOpencodexCheckpointDiffOutput, E>
+
+export interface ServerOpencodexApi<E = never> {
+  readonly capabilities: ServerOpencodexCapabilitiesOperation<E>
+  readonly config: { readonly patch: ServerOpencodexConfigPatchOperation<E> }
+  readonly provider: { readonly refresh: ServerOpencodexProviderRefreshOperation<E> }
+  readonly project: { readonly subrepos: ServerOpencodexProjectSubreposOperation<E> }
+  readonly vcs: {
+    readonly branch: { readonly switch: ServerOpencodexVcsBranchSwitchOperation<E> }
+    readonly stage: ServerOpencodexVcsStageOperation<E>
+    readonly unstage: ServerOpencodexVcsUnstageOperation<E>
+    readonly discard: ServerOpencodexVcsDiscardOperation<E>
+    readonly commit: ServerOpencodexVcsCommitOperation<E>
+    readonly push: ServerOpencodexVcsPushOperation<E>
+    readonly operation: ServerOpencodexVcsOperationOperation<E>
+    readonly history: ServerOpencodexVcsHistoryOperation<E>
+  }
+  readonly worktree: {
+    readonly details: ServerOpencodexWorktreeDetailsOperation<E>
+    readonly reset: ServerOpencodexWorktreeResetOperation<E>
+  }
+  readonly goal: {
+    readonly get: ServerOpencodexGoalGetOperation<E>
+    readonly status: ServerOpencodexGoalStatusOperation<E>
+    readonly clear: ServerOpencodexGoalClearOperation<E>
+  }
+  readonly hooks: {
+    readonly get: ServerOpencodexHooksGetOperation<E>
+    readonly update: ServerOpencodexHooksUpdateOperation<E>
+    readonly run: ServerOpencodexHooksRunOperation<E>
+  }
+  readonly memory: {
+    readonly get: ServerOpencodexMemoryGetOperation<E>
+    readonly update: ServerOpencodexMemoryUpdateOperation<E>
+    readonly capture: ServerOpencodexMemoryCaptureOperation<E>
+  }
+  readonly checkpoint: {
+    readonly list: ServerOpencodexCheckpointListOperation<E>
+    readonly create: ServerOpencodexCheckpointCreateOperation<E>
+    readonly restore: ServerOpencodexCheckpointRestoreOperation<E>
+    readonly delete: ServerOpencodexCheckpointDeleteOperation<E>
+    readonly diff: ServerOpencodexCheckpointDiffOperation<E>
+  }
+}
+
 export interface AppApi<E = never> {
   readonly server: ServerApi<E>
   readonly location: LocationApi<E>
@@ -2543,4 +3181,5 @@ export interface AppApi<E = never> {
   readonly websearch: WebsearchApi<E>
   readonly usage: UsageApi<E>
   readonly config: ConfigApi<E>
+  readonly "server.opencodex": ServerOpencodexApi<E>
 }

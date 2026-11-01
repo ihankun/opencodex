@@ -1111,12 +1111,10 @@ async function buildPromptInput(input: Json) {
         return { data: true }
       },
       reset: async (input: Json = {}) => {
+        const reset = (input.worktreeResetInput ?? {}) as Json
         await options.requestJson(`/experimental/worktree/reset${directoryQuery(input.directory)}`, {
           method: "POST",
-          body: JSON.stringify({
-            directory: input.directory,
-            ...(input.worktreeResetInput as Json | undefined),
-          }),
+          body: JSON.stringify({ worktree: reset.directory }),
         })
         return { data: true }
       },

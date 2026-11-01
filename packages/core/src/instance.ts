@@ -43,6 +43,7 @@ import { SessionCompaction } from "./session/compaction.js"
 import { SessionTitle } from "./session/title.js"
 import { SessionContext } from "./session/context.js"
 import { Skill } from "./skill.js"
+import { SkillMarketplace } from "./skill/marketplace.js"
 import { SkillInstructions } from "./skill/instructions.js"
 import { Snapshot } from "./snapshot.js"
 import { InstructionDiscovery } from "./instruction-discovery.js"
@@ -83,6 +84,7 @@ const nodes = [
   Pty.node,
   Shell.node,
   Skill.node,
+  SkillMarketplace.node,
   InstructionBuiltIns.node,
   InstructionDiscovery.node,
   FileAccess.node,

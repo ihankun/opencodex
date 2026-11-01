@@ -340,10 +340,10 @@ export const OpencodexHandler = HttpApiBuilder.group(Api, "server.opencodex", (h
         )
       })
 
-    const worktreeReset = (ctx: { payload: { directory: string } }) =>
+    const worktreeReset = (ctx: { payload: { worktree: string } }) =>
       Effect.gen(function* () {
         const location = yield* Location.Service
-        const target = ctx.payload.directory
+        const target = ctx.payload.worktree
         if (!target || path.resolve(target) === path.resolve(location.project.directory)) {
           return HttpApiSchema.NoContent.make()
         }

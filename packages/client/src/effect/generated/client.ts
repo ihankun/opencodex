@@ -209,6 +209,16 @@ import type {
   CommandListOutput,
   SkillListInput,
   SkillListOutput,
+  SkillMarketplaceSearchInput,
+  SkillMarketplaceSearchOutput,
+  SkillMarketplaceDetailInput,
+  SkillMarketplaceDetailOutput,
+  SkillMarketplaceInstalledInput,
+  SkillMarketplaceInstalledOutput,
+  SkillMarketplaceInstallInput,
+  SkillMarketplaceInstallOutput,
+  SkillMarketplaceRemoveInput,
+  SkillMarketplaceRemoveOutput,
   RpcCallInput,
   RpcCallOutput,
   EventSubscribeInput,
@@ -292,6 +302,62 @@ import type {
   ConfigShellsOutput,
   ConfigUpdateInput,
   ConfigUpdateOutput,
+  ServerOpencodexCapabilitiesInput,
+  ServerOpencodexCapabilitiesOutput,
+  ServerOpencodexConfigPatchInput,
+  ServerOpencodexConfigPatchOutput,
+  ServerOpencodexProviderRefreshInput,
+  ServerOpencodexProviderRefreshOutput,
+  ServerOpencodexProjectSubreposInput,
+  ServerOpencodexProjectSubreposOutput,
+  ServerOpencodexVcsBranchSwitchInput,
+  ServerOpencodexVcsBranchSwitchOutput,
+  ServerOpencodexVcsStageInput,
+  ServerOpencodexVcsStageOutput,
+  ServerOpencodexVcsUnstageInput,
+  ServerOpencodexVcsUnstageOutput,
+  ServerOpencodexVcsDiscardInput,
+  ServerOpencodexVcsDiscardOutput,
+  ServerOpencodexVcsCommitInput,
+  ServerOpencodexVcsCommitOutput,
+  ServerOpencodexVcsPushInput,
+  ServerOpencodexVcsPushOutput,
+  ServerOpencodexVcsOperationInput,
+  ServerOpencodexVcsOperationOutput,
+  ServerOpencodexVcsHistoryInput,
+  ServerOpencodexVcsHistoryOutput,
+  ServerOpencodexWorktreeDetailsInput,
+  ServerOpencodexWorktreeDetailsOutput,
+  ServerOpencodexWorktreeResetInput,
+  ServerOpencodexWorktreeResetOutput,
+  ServerOpencodexGoalGetInput,
+  ServerOpencodexGoalGetOutput,
+  ServerOpencodexGoalStatusInput,
+  ServerOpencodexGoalStatusOutput,
+  ServerOpencodexGoalClearInput,
+  ServerOpencodexGoalClearOutput,
+  ServerOpencodexHooksGetInput,
+  ServerOpencodexHooksGetOutput,
+  ServerOpencodexHooksUpdateInput,
+  ServerOpencodexHooksUpdateOutput,
+  ServerOpencodexHooksRunInput,
+  ServerOpencodexHooksRunOutput,
+  ServerOpencodexMemoryGetInput,
+  ServerOpencodexMemoryGetOutput,
+  ServerOpencodexMemoryUpdateInput,
+  ServerOpencodexMemoryUpdateOutput,
+  ServerOpencodexMemoryCaptureInput,
+  ServerOpencodexMemoryCaptureOutput,
+  ServerOpencodexCheckpointListInput,
+  ServerOpencodexCheckpointListOutput,
+  ServerOpencodexCheckpointCreateInput,
+  ServerOpencodexCheckpointCreateOutput,
+  ServerOpencodexCheckpointRestoreInput,
+  ServerOpencodexCheckpointRestoreOutput,
+  ServerOpencodexCheckpointDeleteInput,
+  ServerOpencodexCheckpointDeleteOutput,
+  ServerOpencodexCheckpointDiffInput,
+  ServerOpencodexCheckpointDiffOutput,
 } from "../api/api.js"
 import { ClientError } from "./client-error.js"
 
@@ -1361,7 +1427,60 @@ const EndpointSkillList = (raw: RawClient["server.skill"]) => (input?: SkillList
     raw["skill.list"]({ query: { location: input?.["location"] } }).pipe(Effect.mapError(mapClientError)),
   )
 
-const adaptGroupSkill = (raw: RawClient["server.skill"]) => ({ list: EndpointSkillList(raw) })
+const EndpointSkillMarketplaceSearch = (raw: RawClient["server.skill"]) => (input: SkillMarketplaceSearchInput) =>
+  preserveEffect<SkillMarketplaceSearchOutput>()(
+    raw["skill.marketplaceSearch"]({
+      query: {
+        location: input["location"],
+        q: input["q"],
+        provider: input["provider"],
+        sort: input["sort"],
+        category: input["category"],
+        limit: input["limit"],
+        page: input["page"],
+      },
+    }).pipe(Effect.mapError(mapClientError)),
+  )
+
+const EndpointSkillMarketplaceDetail = (raw: RawClient["server.skill"]) => (input: SkillMarketplaceDetailInput) =>
+  preserveEffect<SkillMarketplaceDetailOutput>()(
+    raw["skill.marketplaceDetail"]({
+      query: { location: input["location"], id: input["id"], provider: input["provider"] },
+    }).pipe(Effect.mapError(mapClientError)),
+  )
+
+const EndpointSkillMarketplaceInstalled =
+  (raw: RawClient["server.skill"]) => (input?: SkillMarketplaceInstalledInput) =>
+    preserveEffect<SkillMarketplaceInstalledOutput>()(
+      raw["skill.marketplaceInstalled"]({ query: { location: input?.["location"] } }).pipe(
+        Effect.mapError(mapClientError),
+      ),
+    )
+
+const EndpointSkillMarketplaceInstall = (raw: RawClient["server.skill"]) => (input: SkillMarketplaceInstallInput) =>
+  preserveEffect<SkillMarketplaceInstallOutput>()(
+    raw["skill.marketplaceInstall"]({
+      query: { location: input["location"] },
+      payload: { id: input["id"], provider: input["provider"], scope: input["scope"], force: input["force"] },
+    }).pipe(Effect.mapError(mapClientError)),
+  )
+
+const EndpointSkillMarketplaceRemove = (raw: RawClient["server.skill"]) => (input: SkillMarketplaceRemoveInput) =>
+  preserveEffect<SkillMarketplaceRemoveOutput>()(
+    raw["skill.marketplaceRemove"]({
+      query: { location: input["location"] },
+      payload: { id: input["id"], provider: input["provider"], scope: input["scope"], force: input["force"] },
+    }).pipe(Effect.mapError(mapClientError)),
+  )
+
+const adaptGroupSkill = (raw: RawClient["server.skill"]) => ({
+  list: EndpointSkillList(raw),
+  marketplaceSearch: EndpointSkillMarketplaceSearch(raw),
+  marketplaceDetail: EndpointSkillMarketplaceDetail(raw),
+  marketplaceInstalled: EndpointSkillMarketplaceInstalled(raw),
+  marketplaceInstall: EndpointSkillMarketplaceInstall(raw),
+  marketplaceRemove: EndpointSkillMarketplaceRemove(raw),
+})
 
 const EndpointRpcCall = (raw: RawClient["server.rpc"]) => (input: RpcCallInput) =>
   preserveEffect<RpcCallOutput>()(
@@ -1761,6 +1880,289 @@ const adaptGroupConfig = (raw: RawClient["server.config"]) => ({
   update: EndpointConfigUpdate(raw),
 })
 
+const EndpointServerOpencodexCapabilities =
+  (raw: RawClient["server.opencodex"]) => (input?: ServerOpencodexCapabilitiesInput) =>
+    preserveEffect<ServerOpencodexCapabilitiesOutput>()(
+      raw["opencodex.capabilities"]({ query: { directory: input?.["directory"], global: input?.["global"] } }).pipe(
+        Effect.mapError(mapClientError),
+      ),
+    )
+
+type ServerOpencodexConfigPatchRequest = Parameters<RawClient["server.opencodex"]["opencodex.config.patch"]>[0]
+const EndpointServerOpencodexConfigPatch =
+  (raw: RawClient["server.opencodex"]) => (input: ServerOpencodexConfigPatchInput) =>
+    preserveEffect<ServerOpencodexConfigPatchOutput>()(
+      raw["opencodex.config.patch"]({
+        query: { directory: input["directory"], global: input["global"] },
+        payload: input["payload"],
+      } as ServerOpencodexConfigPatchRequest).pipe(Effect.mapError(mapClientError)),
+    )
+
+const EndpointServerOpencodexProviderRefresh =
+  (raw: RawClient["server.opencodex"]) => (input?: ServerOpencodexProviderRefreshInput) =>
+    preserveEffect<ServerOpencodexProviderRefreshOutput>()(
+      raw["opencodex.provider.refresh"]({ query: { directory: input?.["directory"], global: input?.["global"] } }).pipe(
+        Effect.mapError(mapClientError),
+      ),
+    )
+
+const EndpointServerOpencodexProjectSubrepos =
+  (raw: RawClient["server.opencodex"]) => (input?: ServerOpencodexProjectSubreposInput) =>
+    preserveEffect<ServerOpencodexProjectSubreposOutput>()(
+      raw["opencodex.project.subrepos"]({ query: { directory: input?.["directory"], global: input?.["global"] } }).pipe(
+        Effect.mapError(mapClientError),
+      ),
+    )
+
+const EndpointServerOpencodexVcsBranchSwitch =
+  (raw: RawClient["server.opencodex"]) => (input: ServerOpencodexVcsBranchSwitchInput) =>
+    preserveEffect<ServerOpencodexVcsBranchSwitchOutput>()(
+      raw["opencodex.vcs.branch"]({
+        query: { directory: input["directory"], global: input["global"] },
+        payload: { branch: input["branch"] },
+      }).pipe(Effect.mapError(mapClientError)),
+    )
+
+const EndpointServerOpencodexVcsStage = (raw: RawClient["server.opencodex"]) => (input: ServerOpencodexVcsStageInput) =>
+  preserveEffect<ServerOpencodexVcsStageOutput>()(
+    raw["opencodex.vcs.stage"]({
+      query: { directory: input["directory"], global: input["global"] },
+      payload: { files: input["files"] },
+    }).pipe(Effect.mapError(mapClientError)),
+  )
+
+const EndpointServerOpencodexVcsUnstage =
+  (raw: RawClient["server.opencodex"]) => (input: ServerOpencodexVcsUnstageInput) =>
+    preserveEffect<ServerOpencodexVcsUnstageOutput>()(
+      raw["opencodex.vcs.unstage"]({
+        query: { directory: input["directory"], global: input["global"] },
+        payload: { files: input["files"] },
+      }).pipe(Effect.mapError(mapClientError)),
+    )
+
+const EndpointServerOpencodexVcsDiscard =
+  (raw: RawClient["server.opencodex"]) => (input: ServerOpencodexVcsDiscardInput) =>
+    preserveEffect<ServerOpencodexVcsDiscardOutput>()(
+      raw["opencodex.vcs.discard"]({
+        query: { directory: input["directory"], global: input["global"] },
+        payload: { files: input["files"] },
+      }).pipe(Effect.mapError(mapClientError)),
+    )
+
+const EndpointServerOpencodexVcsCommit =
+  (raw: RawClient["server.opencodex"]) => (input: ServerOpencodexVcsCommitInput) =>
+    preserveEffect<ServerOpencodexVcsCommitOutput>()(
+      raw["opencodex.vcs.commit"]({
+        query: { directory: input["directory"], global: input["global"] },
+        payload: { message: input["message"] },
+      }).pipe(Effect.mapError(mapClientError)),
+    )
+
+const EndpointServerOpencodexVcsPush = (raw: RawClient["server.opencodex"]) => (input?: ServerOpencodexVcsPushInput) =>
+  preserveEffect<ServerOpencodexVcsPushOutput>()(
+    raw["opencodex.vcs.push"]({ query: { directory: input?.["directory"], global: input?.["global"] } }).pipe(
+      Effect.mapError(mapClientError),
+    ),
+  )
+
+const EndpointServerOpencodexVcsOperation =
+  (raw: RawClient["server.opencodex"]) => (input: ServerOpencodexVcsOperationInput) =>
+    preserveEffect<ServerOpencodexVcsOperationOutput>()(
+      raw["opencodex.vcs.operation"]({
+        query: { directory: input["directory"], global: input["global"] },
+        payload: { action: input["action"], argument: input["argument"] },
+      }).pipe(Effect.mapError(mapClientError)),
+    )
+
+const EndpointServerOpencodexVcsHistory =
+  (raw: RawClient["server.opencodex"]) => (input?: ServerOpencodexVcsHistoryInput) =>
+    preserveEffect<ServerOpencodexVcsHistoryOutput>()(
+      raw["opencodex.vcs.history"]({ query: { directory: input?.["directory"], limit: input?.["limit"] } }).pipe(
+        Effect.mapError(mapClientError),
+      ),
+    )
+
+const EndpointServerOpencodexWorktreeDetails =
+  (raw: RawClient["server.opencodex"]) => (input?: ServerOpencodexWorktreeDetailsInput) =>
+    preserveEffect<ServerOpencodexWorktreeDetailsOutput>()(
+      raw["opencodex.worktree.details"]({ query: { directory: input?.["directory"], global: input?.["global"] } }).pipe(
+        Effect.mapError(mapClientError),
+      ),
+    )
+
+const EndpointServerOpencodexWorktreeReset =
+  (raw: RawClient["server.opencodex"]) => (input: ServerOpencodexWorktreeResetInput) =>
+    preserveEffect<ServerOpencodexWorktreeResetOutput>()(
+      raw["opencodex.worktree.reset"]({
+        query: { directory: input["directory"], global: input["global"] },
+        payload: { worktree: input["worktree"] },
+      }).pipe(Effect.mapError(mapClientError)),
+    )
+
+const EndpointServerOpencodexGoalGet = (raw: RawClient["server.opencodex"]) => (input: ServerOpencodexGoalGetInput) =>
+  preserveEffect<ServerOpencodexGoalGetOutput>()(
+    raw["opencodex.goal.get"]({
+      params: { sessionID: input["sessionID"] },
+      query: { directory: input["directory"], global: input["global"] },
+    }).pipe(Effect.mapError(mapClientError)),
+  )
+
+const EndpointServerOpencodexGoalStatus =
+  (raw: RawClient["server.opencodex"]) => (input: ServerOpencodexGoalStatusInput) =>
+    preserveEffect<ServerOpencodexGoalStatusOutput>()(
+      raw["opencodex.goal.status"]({
+        params: { sessionID: input["sessionID"] },
+        query: { directory: input["directory"], global: input["global"] },
+        payload: { status: input["status"] },
+      }).pipe(Effect.mapError(mapClientError)),
+    )
+
+const EndpointServerOpencodexGoalClear =
+  (raw: RawClient["server.opencodex"]) => (input: ServerOpencodexGoalClearInput) =>
+    preserveEffect<ServerOpencodexGoalClearOutput>()(
+      raw["opencodex.goal.clear"]({
+        params: { sessionID: input["sessionID"] },
+        query: { directory: input["directory"], global: input["global"] },
+      }).pipe(Effect.mapError(mapClientError)),
+    )
+
+const EndpointServerOpencodexHooksGet =
+  (raw: RawClient["server.opencodex"]) => (input?: ServerOpencodexHooksGetInput) =>
+    preserveEffect<ServerOpencodexHooksGetOutput>()(
+      raw["opencodex.hooks.get"]({ query: { directory: input?.["directory"], global: input?.["global"] } }).pipe(
+        Effect.mapError(mapClientError),
+      ),
+    )
+
+const EndpointServerOpencodexHooksUpdate =
+  (raw: RawClient["server.opencodex"]) => (input: ServerOpencodexHooksUpdateInput) =>
+    preserveEffect<ServerOpencodexHooksUpdateOutput>()(
+      raw["opencodex.hooks.update"]({
+        query: { directory: input["directory"], global: input["global"] },
+        payload: { hooks: input["hooks"] },
+      }).pipe(Effect.mapError(mapClientError)),
+    )
+
+const EndpointServerOpencodexHooksRun = (raw: RawClient["server.opencodex"]) => (input: ServerOpencodexHooksRunInput) =>
+  preserveEffect<ServerOpencodexHooksRunOutput>()(
+    raw["opencodex.hooks.run"]({
+      query: { directory: input["directory"], global: input["global"] },
+      payload: { event: input["event"] },
+    }).pipe(Effect.mapError(mapClientError)),
+  )
+
+const EndpointServerOpencodexMemoryGet =
+  (raw: RawClient["server.opencodex"]) => (input: ServerOpencodexMemoryGetInput) =>
+    preserveEffect<ServerOpencodexMemoryGetOutput>()(
+      raw["opencodex.memory.get"]({
+        params: { sourceID: input["sourceID"] },
+        query: { directory: input["directory"], global: input["global"] },
+      }).pipe(Effect.mapError(mapClientError)),
+    )
+
+const EndpointServerOpencodexMemoryUpdate =
+  (raw: RawClient["server.opencodex"]) => (input: ServerOpencodexMemoryUpdateInput) =>
+    preserveEffect<ServerOpencodexMemoryUpdateOutput>()(
+      raw["opencodex.memory.update"]({
+        params: { sourceID: input["sourceID"] },
+        query: { directory: input["directory"], global: input["global"] },
+        payload: { content: input["content"] },
+      }).pipe(Effect.mapError(mapClientError)),
+    )
+
+const EndpointServerOpencodexMemoryCapture =
+  (raw: RawClient["server.opencodex"]) => (input: ServerOpencodexMemoryCaptureInput) =>
+    preserveEffect<ServerOpencodexMemoryCaptureOutput>()(
+      raw["opencodex.memory.capture"]({
+        query: { directory: input["directory"], global: input["global"] },
+        payload: { content: input["content"] },
+      }).pipe(Effect.mapError(mapClientError)),
+    )
+
+const EndpointServerOpencodexCheckpointList =
+  (raw: RawClient["server.opencodex"]) => (input?: ServerOpencodexCheckpointListInput) =>
+    preserveEffect<ServerOpencodexCheckpointListOutput>()(
+      raw["opencodex.checkpoint.list"]({
+        query: { directory: input?.["directory"], sessionID: input?.["sessionID"] },
+      }).pipe(Effect.mapError(mapClientError)),
+    )
+
+const EndpointServerOpencodexCheckpointCreate =
+  (raw: RawClient["server.opencodex"]) => (input: ServerOpencodexCheckpointCreateInput) =>
+    preserveEffect<ServerOpencodexCheckpointCreateOutput>()(
+      raw["opencodex.checkpoint.create"]({
+        query: { directory: input["directory"], global: input["global"] },
+        payload: { sessionID: input["sessionID"], label: input["label"] },
+      }).pipe(Effect.mapError(mapClientError)),
+    )
+
+const EndpointServerOpencodexCheckpointRestore =
+  (raw: RawClient["server.opencodex"]) => (input: ServerOpencodexCheckpointRestoreInput) =>
+    preserveEffect<ServerOpencodexCheckpointRestoreOutput>()(
+      raw["opencodex.checkpoint.restore"]({
+        query: { directory: input["directory"], global: input["global"] },
+        payload: { id: input["id"] },
+      }).pipe(Effect.mapError(mapClientError)),
+    )
+
+const EndpointServerOpencodexCheckpointDelete =
+  (raw: RawClient["server.opencodex"]) => (input: ServerOpencodexCheckpointDeleteInput) =>
+    preserveEffect<ServerOpencodexCheckpointDeleteOutput>()(
+      raw["opencodex.checkpoint.delete"]({
+        params: { checkpointID: input["checkpointID"] },
+        query: { directory: input["directory"], global: input["global"] },
+      }).pipe(Effect.mapError(mapClientError)),
+    )
+
+const EndpointServerOpencodexCheckpointDiff =
+  (raw: RawClient["server.opencodex"]) => (input: ServerOpencodexCheckpointDiffInput) =>
+    preserveEffect<ServerOpencodexCheckpointDiffOutput>()(
+      raw["opencodex.checkpoint.diff"]({
+        params: { checkpointID: input["checkpointID"] },
+        query: { directory: input["directory"], global: input["global"] },
+      }).pipe(Effect.mapError(mapClientError)),
+    )
+
+const adaptGroupServerOpencodex = (raw: RawClient["server.opencodex"]) => ({
+  capabilities: EndpointServerOpencodexCapabilities(raw),
+  config: { patch: EndpointServerOpencodexConfigPatch(raw) },
+  provider: { refresh: EndpointServerOpencodexProviderRefresh(raw) },
+  project: { subrepos: EndpointServerOpencodexProjectSubrepos(raw) },
+  vcs: {
+    branch: { switch: EndpointServerOpencodexVcsBranchSwitch(raw) },
+    stage: EndpointServerOpencodexVcsStage(raw),
+    unstage: EndpointServerOpencodexVcsUnstage(raw),
+    discard: EndpointServerOpencodexVcsDiscard(raw),
+    commit: EndpointServerOpencodexVcsCommit(raw),
+    push: EndpointServerOpencodexVcsPush(raw),
+    operation: EndpointServerOpencodexVcsOperation(raw),
+    history: EndpointServerOpencodexVcsHistory(raw),
+  },
+  worktree: { details: EndpointServerOpencodexWorktreeDetails(raw), reset: EndpointServerOpencodexWorktreeReset(raw) },
+  goal: {
+    get: EndpointServerOpencodexGoalGet(raw),
+    status: EndpointServerOpencodexGoalStatus(raw),
+    clear: EndpointServerOpencodexGoalClear(raw),
+  },
+  hooks: {
+    get: EndpointServerOpencodexHooksGet(raw),
+    update: EndpointServerOpencodexHooksUpdate(raw),
+    run: EndpointServerOpencodexHooksRun(raw),
+  },
+  memory: {
+    get: EndpointServerOpencodexMemoryGet(raw),
+    update: EndpointServerOpencodexMemoryUpdate(raw),
+    capture: EndpointServerOpencodexMemoryCapture(raw),
+  },
+  checkpoint: {
+    list: EndpointServerOpencodexCheckpointList(raw),
+    create: EndpointServerOpencodexCheckpointCreate(raw),
+    restore: EndpointServerOpencodexCheckpointRestore(raw),
+    delete: EndpointServerOpencodexCheckpointDelete(raw),
+    diff: EndpointServerOpencodexCheckpointDiff(raw),
+  },
+})
+
 const adaptClient = (raw: RawClient) => ({
   server: adaptGroupServer(raw["server.server"]),
   location: adaptGroupLocation(raw["server.location"]),
@@ -1794,6 +2196,7 @@ const adaptClient = (raw: RawClient) => ({
   websearch: adaptGroupWebsearch(raw["server.websearch"]),
   usage: adaptGroupUsage(raw["server.usage"]),
   config: adaptGroupConfig(raw["server.config"]),
+  "server.opencodex": adaptGroupServerOpencodex(raw["server.opencodex"]),
 })
 
 export const make = (options?: { readonly baseUrl?: URL | string }) =>

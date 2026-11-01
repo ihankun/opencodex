@@ -294,6 +294,42 @@ export type PermissionSavedID = string
 
 export type CommandInfo = { name: string; description?: string }
 
+export type SkillMarketplaceSummary = {
+  id: string
+  provider: "official" | "netease"
+  slug: string
+  name: string
+  source: string
+  description: string
+  url: string
+  version: string | null
+  category: string | null
+  tags: Array<string>
+  icon: string | null
+  githubStars: number
+  downloadCount: number
+  isVerified: boolean
+  securityScore: number | null
+  securityStatus: string | null
+  aiScore: number | null
+  reviewStatus: string | null
+}
+
+export type SkillMarketplaceFile = { path: string; contents: string }
+
+export type SkillMarketplaceManifest = {
+  id: string
+  provider: "official" | "netease"
+  source: string
+  slug: string
+  version: string | null
+  hash: string | null
+  scope: "global" | "project"
+  installedAt: string
+  updatedAt: string
+  files: { [x: string]: string }
+}
+
 export type RpcOutput = { output?: any }
 
 export type PermissionReply = "once" | "always" | "reject"
@@ -779,6 +815,48 @@ export type PermissionSavedInfo = {
   action: string
   resource: string
   time: { created: number; updated: number }
+}
+
+export type SkillMarketplacePage = {
+  data: Array<SkillMarketplaceSummary>
+  page: number
+  perPage: number
+  total: number
+  categories: Array<string>
+}
+
+export type SkillMarketplaceDetail = {
+  id: string
+  provider: "official" | "netease"
+  source: string
+  slug: string
+  version: string | null
+  category: string | null
+  tags: Array<string>
+  icon: string | null
+  hash: string
+  files: Array<SkillMarketplaceFile>
+  githubStars: number
+  downloadCount: number
+  isVerified: boolean
+  isFeatured: boolean
+  securityScore: number | null
+  securityStatus: string | null
+  qualityScore: number | null
+  aiScore: number | null
+  reviewStatus: string | null
+  license: string | null
+}
+
+export type SkillMarketplaceInstallation = {
+  id: string
+  provider: "official" | "netease"
+  slug: string
+  scope: "global" | "project"
+  directory: string
+  manifest: SkillMarketplaceManifest
+  conflict: boolean
+  updateAvailable: boolean
 }
 
 export type Pty = {
@@ -3035,6 +3113,14 @@ export type FileNotFoundError = { readonly _tag: "FileNotFoundError"; readonly p
 export const isFileNotFoundError = (value: unknown): value is FileNotFoundError =>
   typeof value === "object" && value !== null && "_tag" in value && value["_tag"] === "FileNotFoundError"
 
+export type SkillMarketplaceError = {
+  readonly _tag: "SkillMarketplaceError"
+  readonly message: string
+  readonly conflict?: boolean | undefined
+}
+export const isSkillMarketplaceError = (value: unknown): value is SkillMarketplaceError =>
+  typeof value === "object" && value !== null && "_tag" in value && value["_tag"] === "SkillMarketplaceError"
+
 export type RpcError = {
   readonly _tag: "RpcError"
   readonly type: string
@@ -4135,6 +4221,52 @@ export type SkillListInput = { readonly location?: { readonly directory?: string
 
 export type SkillListOutput = { location: LocationPublicRef; data: Array<SkillInfo> }
 
+export type SkillMarketplaceSearchInput = {
+  readonly location?: { readonly directory?: string | undefined } | undefined
+  readonly q: string
+  readonly provider: "official" | "netease"
+  readonly sort?: "recommended" | "aiScore" | "downloads" | "stars" | "rating" | "recent" | undefined
+  readonly category?: string | undefined
+  readonly limit?: number | undefined
+  readonly page?: number | undefined
+}
+
+export type SkillMarketplaceSearchOutput = { location: LocationPublicRef; data: SkillMarketplacePage }
+
+export type SkillMarketplaceDetailInput = {
+  readonly location?: { readonly directory?: string | undefined } | undefined
+  readonly id: string
+  readonly provider: "official" | "netease"
+}
+
+export type SkillMarketplaceDetailOutput = { location: LocationPublicRef; data: SkillMarketplaceDetail }
+
+export type SkillMarketplaceInstalledInput = {
+  readonly location?: { readonly directory?: string | undefined } | undefined
+}
+
+export type SkillMarketplaceInstalledOutput = { location: LocationPublicRef; data: Array<SkillMarketplaceInstallation> }
+
+export type SkillMarketplaceInstallInput = {
+  readonly location?: { readonly directory?: string | undefined } | undefined
+  readonly id: string
+  readonly provider: "official" | "netease"
+  readonly scope: "global" | "project"
+  readonly force?: boolean | undefined
+}
+
+export type SkillMarketplaceInstallOutput = { location: LocationPublicRef; data: SkillMarketplaceInstallation }
+
+export type SkillMarketplaceRemoveInput = {
+  readonly location?: { readonly directory?: string | undefined } | undefined
+  readonly id: string
+  readonly provider: "official" | "netease"
+  readonly scope: "global" | "project"
+  readonly force?: boolean | undefined
+}
+
+export type SkillMarketplaceRemoveOutput = void
+
 export type RpcCallInput = {
   readonly rpcID: string
   readonly method: string
@@ -4499,3 +4631,380 @@ export type ConfigShellsOutput = Array<ConfigShellOption>
 export type ConfigUpdateInput = { readonly shell: string | null }
 
 export type ConfigUpdateOutput = void
+
+export type ServerOpencodexCapabilitiesInput = {
+  readonly directory?: string | undefined
+  readonly global?: string | undefined
+}
+
+export type ServerOpencodexCapabilitiesOutput = {
+  apiVersion: number
+  backgroundSubagents: boolean
+  worktree: boolean
+  worktreeBaseBranch: boolean
+  vcsMutations: boolean
+  workspaceCheckpoints: boolean
+  advancedVcs: boolean
+  checkpointRegistry: boolean
+  memory: boolean
+  hooks: boolean
+  pullRequests: boolean
+}
+
+export type ServerOpencodexConfigPatchInput = {
+  readonly directory?: string | undefined
+  readonly global?: string | undefined
+  readonly payload: { readonly [x: string]: unknown }
+}
+
+export type ServerOpencodexConfigPatchOutput = void
+
+export type ServerOpencodexProviderRefreshInput = {
+  readonly directory?: string | undefined
+  readonly global?: string | undefined
+}
+
+export type ServerOpencodexProviderRefreshOutput = void
+
+export type ServerOpencodexProjectSubreposInput = {
+  readonly directory?: string | undefined
+  readonly global?: string | undefined
+}
+
+export type ServerOpencodexProjectSubreposOutput = { directory: string; repos: Array<{ worktree: string }> }
+
+export type ServerOpencodexVcsBranchSwitchInput = {
+  readonly directory?: string | undefined
+  readonly global?: string | undefined
+  readonly branch: string
+}
+
+export type ServerOpencodexVcsBranchSwitchOutput = { branch: string }
+
+export type ServerOpencodexVcsStageInput = {
+  readonly directory?: string | undefined
+  readonly global?: string | undefined
+  readonly files: ReadonlyArray<string>
+}
+
+export type ServerOpencodexVcsStageOutput = { output: string }
+
+export type ServerOpencodexVcsUnstageInput = {
+  readonly directory?: string | undefined
+  readonly global?: string | undefined
+  readonly files: ReadonlyArray<string>
+}
+
+export type ServerOpencodexVcsUnstageOutput = { output: string }
+
+export type ServerOpencodexVcsDiscardInput = {
+  readonly directory?: string | undefined
+  readonly global?: string | undefined
+  readonly files: ReadonlyArray<string>
+}
+
+export type ServerOpencodexVcsDiscardOutput = { output: string }
+
+export type ServerOpencodexVcsCommitInput = {
+  readonly directory?: string | undefined
+  readonly global?: string | undefined
+  readonly message: string
+}
+
+export type ServerOpencodexVcsCommitOutput = { output: string }
+
+export type ServerOpencodexVcsPushInput = {
+  readonly directory?: string | undefined
+  readonly global?: string | undefined
+}
+
+export type ServerOpencodexVcsPushOutput = { output: string }
+
+export type ServerOpencodexVcsOperationInput = {
+  readonly directory?: string | undefined
+  readonly global?: string | undefined
+  readonly action: string
+  readonly argument?: string | undefined
+}
+
+export type ServerOpencodexVcsOperationOutput = { output: string }
+
+export type ServerOpencodexVcsHistoryInput = {
+  readonly directory?: string | undefined
+  readonly limit?: number | undefined
+}
+
+export type ServerOpencodexVcsHistoryOutput = Array<{
+  hash: string
+  shortHash: string
+  author: string
+  timestamp: number
+  subject: string
+}>
+
+export type ServerOpencodexWorktreeDetailsInput = {
+  readonly directory?: string | undefined
+  readonly global?: string | undefined
+}
+
+export type ServerOpencodexWorktreeDetailsOutput = Array<{
+  name: string
+  branch?: string | undefined
+  directory: string
+  dirty: boolean
+  managed: boolean
+  sizeBytes: number
+  fileCount: number
+  measuredCompletely: boolean
+  createdAt: number
+  modifiedAt: number
+}>
+
+export type ServerOpencodexWorktreeResetInput = {
+  readonly directory?: string | undefined
+  readonly global?: string | undefined
+  readonly worktree: string
+}
+
+export type ServerOpencodexWorktreeResetOutput = void
+
+export type ServerOpencodexGoalGetInput = {
+  readonly sessionID: string
+  readonly directory?: string | undefined
+  readonly global?: string | undefined
+}
+
+export type ServerOpencodexGoalGetOutput = {
+  goal: {
+    sessionID: string
+    objective: string
+    status: "active" | "paused" | "complete" | "blocked"
+    step: number
+    statusMessage: string | null
+    createdAt: number
+    updatedAt: number
+    pausedAt: number | null
+    completedAt: number | null
+    evidence: string | null
+    blocker: string | null
+    history: Array<{ type: string; detail: string; timestamp: number }>
+  } | null
+}
+
+export type ServerOpencodexGoalStatusInput = {
+  readonly sessionID: string
+  readonly directory?: string | undefined
+  readonly global?: string | undefined
+  readonly status: "active" | "paused"
+}
+
+export type ServerOpencodexGoalStatusOutput = {
+  goal: {
+    sessionID: string
+    objective: string
+    status: "active" | "paused" | "complete" | "blocked"
+    step: number
+    statusMessage: string | null
+    createdAt: number
+    updatedAt: number
+    pausedAt: number | null
+    completedAt: number | null
+    evidence: string | null
+    blocker: string | null
+    history: Array<{ type: string; detail: string; timestamp: number }>
+  } | null
+}
+
+export type ServerOpencodexGoalClearInput = {
+  readonly sessionID: string
+  readonly directory?: string | undefined
+  readonly global?: string | undefined
+}
+
+export type ServerOpencodexGoalClearOutput = boolean
+
+export type ServerOpencodexHooksGetInput = {
+  readonly directory?: string | undefined
+  readonly global?: string | undefined
+}
+
+export type ServerOpencodexHooksGetOutput = {
+  hooks: Array<{
+    id: string
+    name: string
+    event: "automation.before" | "automation.after" | "git.before" | "git.after" | "notification"
+    command: string
+    enabled: boolean
+    approved: boolean
+    sandbox: boolean
+    timeoutSeconds: number
+  }>
+  runs: Array<{
+    id: string
+    hookID: string
+    hookName: string
+    event: "automation.before" | "automation.after" | "git.before" | "git.after" | "notification"
+    status: "completed" | "failed" | "timed_out" | "blocked"
+    sandboxed: boolean
+    output: string
+    startedAt: number
+    completedAt: number
+  }>
+}
+
+export type ServerOpencodexHooksUpdateInput = {
+  readonly directory?: string | undefined
+  readonly global?: string | undefined
+  readonly hooks: ReadonlyArray<{
+    readonly id: string
+    readonly name: string
+    readonly event: "automation.before" | "automation.after" | "git.before" | "git.after" | "notification"
+    readonly command: string
+    readonly enabled: boolean
+    readonly approved: boolean
+    readonly sandbox: boolean
+    readonly timeoutSeconds: number
+  }>
+}
+
+export type ServerOpencodexHooksUpdateOutput = {
+  hooks: Array<{
+    id: string
+    name: string
+    event: "automation.before" | "automation.after" | "git.before" | "git.after" | "notification"
+    command: string
+    enabled: boolean
+    approved: boolean
+    sandbox: boolean
+    timeoutSeconds: number
+  }>
+  runs: Array<{
+    id: string
+    hookID: string
+    hookName: string
+    event: "automation.before" | "automation.after" | "git.before" | "git.after" | "notification"
+    status: "completed" | "failed" | "timed_out" | "blocked"
+    sandboxed: boolean
+    output: string
+    startedAt: number
+    completedAt: number
+  }>
+}
+
+export type ServerOpencodexHooksRunInput = {
+  readonly directory?: string | undefined
+  readonly global?: string | undefined
+  readonly event: "automation.before" | "automation.after" | "git.before" | "git.after" | "notification"
+}
+
+export type ServerOpencodexHooksRunOutput = Array<{
+  id: string
+  hookID: string
+  hookName: string
+  event: "automation.before" | "automation.after" | "git.before" | "git.after" | "notification"
+  status: "completed" | "failed" | "timed_out" | "blocked"
+  sandboxed: boolean
+  output: string
+  startedAt: number
+  completedAt: number
+}>
+
+export type ServerOpencodexMemoryGetInput = {
+  readonly sourceID: "global" | "project" | "workspace"
+  readonly directory?: string | undefined
+  readonly global?: string | undefined
+}
+
+export type ServerOpencodexMemoryGetOutput = {
+  id: "global" | "project" | "workspace"
+  name: string
+  path: string
+  scope: "global" | "project" | "workspace"
+  exists: boolean
+  content: string
+}
+
+export type ServerOpencodexMemoryUpdateInput = {
+  readonly sourceID: "global" | "project" | "workspace"
+  readonly directory?: string | undefined
+  readonly global?: string | undefined
+  readonly content: string
+}
+
+export type ServerOpencodexMemoryUpdateOutput = {
+  id: "global" | "project" | "workspace"
+  name: string
+  path: string
+  scope: "global" | "project" | "workspace"
+  exists: boolean
+  content: string
+}
+
+export type ServerOpencodexMemoryCaptureInput = {
+  readonly directory?: string | undefined
+  readonly global?: string | undefined
+  readonly content: string
+}
+
+export type ServerOpencodexMemoryCaptureOutput = {
+  id: "global" | "project" | "workspace"
+  name: string
+  path: string
+  scope: "global" | "project" | "workspace"
+  exists: boolean
+  content: string
+}
+
+export type ServerOpencodexCheckpointListInput = {
+  readonly directory?: string | undefined
+  readonly sessionID?: string | undefined
+}
+
+export type ServerOpencodexCheckpointListOutput = Array<{
+  id: string
+  snapshot: string
+  sessionID: string
+  directory: string
+  label: string
+  createdAt: number
+}>
+
+export type ServerOpencodexCheckpointCreateInput = {
+  readonly directory?: string | undefined
+  readonly global?: string | undefined
+  readonly sessionID: string
+  readonly label: string
+}
+
+export type ServerOpencodexCheckpointCreateOutput = {
+  id: string
+  snapshot: string
+  sessionID: string
+  directory: string
+  label: string
+  createdAt: number
+}
+
+export type ServerOpencodexCheckpointRestoreInput = {
+  readonly directory?: string | undefined
+  readonly global?: string | undefined
+  readonly id: string
+}
+
+export type ServerOpencodexCheckpointRestoreOutput = { backupID: string }
+
+export type ServerOpencodexCheckpointDeleteInput = {
+  readonly checkpointID: string
+  readonly directory?: string | undefined
+  readonly global?: string | undefined
+}
+
+export type ServerOpencodexCheckpointDeleteOutput = boolean
+
+export type ServerOpencodexCheckpointDiffInput = {
+  readonly checkpointID: string
+  readonly directory?: string | undefined
+  readonly global?: string | undefined
+}
+
+export type ServerOpencodexCheckpointDiffOutput = string

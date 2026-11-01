@@ -207,6 +207,16 @@ import type {
   CommandListOutput,
   SkillListInput,
   SkillListOutput,
+  SkillMarketplaceSearchInput,
+  SkillMarketplaceSearchOutput,
+  SkillMarketplaceDetailInput,
+  SkillMarketplaceDetailOutput,
+  SkillMarketplaceInstalledInput,
+  SkillMarketplaceInstalledOutput,
+  SkillMarketplaceInstallInput,
+  SkillMarketplaceInstallOutput,
+  SkillMarketplaceRemoveInput,
+  SkillMarketplaceRemoveOutput,
   RpcCallInput,
   RpcCallOutput,
   EventSubscribeInput,
@@ -292,6 +302,62 @@ import type {
   ConfigShellsOutput,
   ConfigUpdateInput,
   ConfigUpdateOutput,
+  ServerOpencodexCapabilitiesInput,
+  ServerOpencodexCapabilitiesOutput,
+  ServerOpencodexConfigPatchInput,
+  ServerOpencodexConfigPatchOutput,
+  ServerOpencodexProviderRefreshInput,
+  ServerOpencodexProviderRefreshOutput,
+  ServerOpencodexProjectSubreposInput,
+  ServerOpencodexProjectSubreposOutput,
+  ServerOpencodexVcsBranchSwitchInput,
+  ServerOpencodexVcsBranchSwitchOutput,
+  ServerOpencodexVcsStageInput,
+  ServerOpencodexVcsStageOutput,
+  ServerOpencodexVcsUnstageInput,
+  ServerOpencodexVcsUnstageOutput,
+  ServerOpencodexVcsDiscardInput,
+  ServerOpencodexVcsDiscardOutput,
+  ServerOpencodexVcsCommitInput,
+  ServerOpencodexVcsCommitOutput,
+  ServerOpencodexVcsPushInput,
+  ServerOpencodexVcsPushOutput,
+  ServerOpencodexVcsOperationInput,
+  ServerOpencodexVcsOperationOutput,
+  ServerOpencodexVcsHistoryInput,
+  ServerOpencodexVcsHistoryOutput,
+  ServerOpencodexWorktreeDetailsInput,
+  ServerOpencodexWorktreeDetailsOutput,
+  ServerOpencodexWorktreeResetInput,
+  ServerOpencodexWorktreeResetOutput,
+  ServerOpencodexGoalGetInput,
+  ServerOpencodexGoalGetOutput,
+  ServerOpencodexGoalStatusInput,
+  ServerOpencodexGoalStatusOutput,
+  ServerOpencodexGoalClearInput,
+  ServerOpencodexGoalClearOutput,
+  ServerOpencodexHooksGetInput,
+  ServerOpencodexHooksGetOutput,
+  ServerOpencodexHooksUpdateInput,
+  ServerOpencodexHooksUpdateOutput,
+  ServerOpencodexHooksRunInput,
+  ServerOpencodexHooksRunOutput,
+  ServerOpencodexMemoryGetInput,
+  ServerOpencodexMemoryGetOutput,
+  ServerOpencodexMemoryUpdateInput,
+  ServerOpencodexMemoryUpdateOutput,
+  ServerOpencodexMemoryCaptureInput,
+  ServerOpencodexMemoryCaptureOutput,
+  ServerOpencodexCheckpointListInput,
+  ServerOpencodexCheckpointListOutput,
+  ServerOpencodexCheckpointCreateInput,
+  ServerOpencodexCheckpointCreateOutput,
+  ServerOpencodexCheckpointRestoreInput,
+  ServerOpencodexCheckpointRestoreOutput,
+  ServerOpencodexCheckpointDeleteInput,
+  ServerOpencodexCheckpointDeleteOutput,
+  ServerOpencodexCheckpointDiffInput,
+  ServerOpencodexCheckpointDiffOutput,
 } from "./types.js"
 import { ClientError } from "./client-error.js"
 
@@ -1844,6 +1910,76 @@ export function make(options: ClientOptions) {
           },
           requestOptions,
         ),
+      marketplaceSearch: (input: SkillMarketplaceSearchInput, requestOptions?: RequestOptions) =>
+        request<SkillMarketplaceSearchOutput>(
+          {
+            method: "GET",
+            path: `/api/skill/marketplace/search`,
+            query: {
+              location: input["location"],
+              q: input["q"],
+              provider: input["provider"],
+              sort: input["sort"],
+              category: input["category"],
+              limit: input["limit"],
+              page: input["page"],
+            },
+            successStatus: 200,
+            declaredStatuses: [400, 401, 404],
+            empty: false,
+          },
+          requestOptions,
+        ),
+      marketplaceDetail: (input: SkillMarketplaceDetailInput, requestOptions?: RequestOptions) =>
+        request<SkillMarketplaceDetailOutput>(
+          {
+            method: "GET",
+            path: `/api/skill/marketplace/detail`,
+            query: { location: input["location"], id: input["id"], provider: input["provider"] },
+            successStatus: 200,
+            declaredStatuses: [400, 401, 404],
+            empty: false,
+          },
+          requestOptions,
+        ),
+      marketplaceInstalled: (input?: SkillMarketplaceInstalledInput, requestOptions?: RequestOptions) =>
+        request<SkillMarketplaceInstalledOutput>(
+          {
+            method: "GET",
+            path: `/api/skill/marketplace/installed`,
+            query: { location: input?.["location"] },
+            successStatus: 200,
+            declaredStatuses: [400, 401, 404],
+            empty: false,
+          },
+          requestOptions,
+        ),
+      marketplaceInstall: (input: SkillMarketplaceInstallInput, requestOptions?: RequestOptions) =>
+        request<SkillMarketplaceInstallOutput>(
+          {
+            method: "POST",
+            path: `/api/skill/marketplace/install`,
+            query: { location: input["location"] },
+            body: { id: input["id"], provider: input["provider"], scope: input["scope"], force: input["force"] },
+            successStatus: 200,
+            declaredStatuses: [400, 401, 404],
+            empty: false,
+          },
+          requestOptions,
+        ),
+      marketplaceRemove: (input: SkillMarketplaceRemoveInput, requestOptions?: RequestOptions) =>
+        request<SkillMarketplaceRemoveOutput>(
+          {
+            method: "DELETE",
+            path: `/api/skill/marketplace/install`,
+            query: { location: input["location"] },
+            body: { id: input["id"], provider: input["provider"], scope: input["scope"], force: input["force"] },
+            successStatus: 204,
+            declaredStatuses: [400, 401, 404],
+            empty: true,
+          },
+          requestOptions,
+        ),
     },
     rpc: {
       call: (input: RpcCallInput, requestOptions?: RequestOptions) =>
@@ -2449,6 +2585,379 @@ export function make(options: ClientOptions) {
           },
           requestOptions,
         ),
+    },
+    "server.opencodex": {
+      capabilities: (input?: ServerOpencodexCapabilitiesInput, requestOptions?: RequestOptions) =>
+        request<ServerOpencodexCapabilitiesOutput>(
+          {
+            method: "GET",
+            path: `/experimental/capabilities`,
+            query: { directory: input?.["directory"], global: input?.["global"] },
+            successStatus: 200,
+            declaredStatuses: [400, 401, 404],
+            empty: false,
+          },
+          requestOptions,
+        ),
+      config: {
+        patch: (input: ServerOpencodexConfigPatchInput, requestOptions?: RequestOptions) =>
+          request<ServerOpencodexConfigPatchOutput>(
+            {
+              method: "PATCH",
+              path: `/experimental/config`,
+              query: { directory: input["directory"], global: input["global"] },
+              body: input["payload"],
+              successStatus: 204,
+              declaredStatuses: [400, 401, 404],
+              empty: true,
+            },
+            requestOptions,
+          ),
+      },
+      provider: {
+        refresh: (input?: ServerOpencodexProviderRefreshInput, requestOptions?: RequestOptions) =>
+          request<ServerOpencodexProviderRefreshOutput>(
+            {
+              method: "POST",
+              path: `/provider/refresh`,
+              query: { directory: input?.["directory"], global: input?.["global"] },
+              successStatus: 204,
+              declaredStatuses: [400, 401, 404],
+              empty: true,
+            },
+            requestOptions,
+          ),
+      },
+      project: {
+        subrepos: (input?: ServerOpencodexProjectSubreposInput, requestOptions?: RequestOptions) =>
+          request<ServerOpencodexProjectSubreposOutput>(
+            {
+              method: "GET",
+              path: `/project/subrepos`,
+              query: { directory: input?.["directory"], global: input?.["global"] },
+              successStatus: 200,
+              declaredStatuses: [400, 401, 404],
+              empty: false,
+            },
+            requestOptions,
+          ),
+      },
+      vcs: {
+        branch: {
+          switch: (input: ServerOpencodexVcsBranchSwitchInput, requestOptions?: RequestOptions) =>
+            request<ServerOpencodexVcsBranchSwitchOutput>(
+              {
+                method: "POST",
+                path: `/vcs/branch`,
+                query: { directory: input["directory"], global: input["global"] },
+                body: { branch: input["branch"] },
+                successStatus: 200,
+                declaredStatuses: [400, 401, 404],
+                empty: false,
+              },
+              requestOptions,
+            ),
+        },
+        stage: (input: ServerOpencodexVcsStageInput, requestOptions?: RequestOptions) =>
+          request<ServerOpencodexVcsStageOutput>(
+            {
+              method: "POST",
+              path: `/vcs/stage`,
+              query: { directory: input["directory"], global: input["global"] },
+              body: { files: input["files"] },
+              successStatus: 200,
+              declaredStatuses: [400, 401, 404],
+              empty: false,
+            },
+            requestOptions,
+          ),
+        unstage: (input: ServerOpencodexVcsUnstageInput, requestOptions?: RequestOptions) =>
+          request<ServerOpencodexVcsUnstageOutput>(
+            {
+              method: "POST",
+              path: `/vcs/unstage`,
+              query: { directory: input["directory"], global: input["global"] },
+              body: { files: input["files"] },
+              successStatus: 200,
+              declaredStatuses: [400, 401, 404],
+              empty: false,
+            },
+            requestOptions,
+          ),
+        discard: (input: ServerOpencodexVcsDiscardInput, requestOptions?: RequestOptions) =>
+          request<ServerOpencodexVcsDiscardOutput>(
+            {
+              method: "POST",
+              path: `/vcs/discard`,
+              query: { directory: input["directory"], global: input["global"] },
+              body: { files: input["files"] },
+              successStatus: 200,
+              declaredStatuses: [400, 401, 404],
+              empty: false,
+            },
+            requestOptions,
+          ),
+        commit: (input: ServerOpencodexVcsCommitInput, requestOptions?: RequestOptions) =>
+          request<ServerOpencodexVcsCommitOutput>(
+            {
+              method: "POST",
+              path: `/vcs/commit`,
+              query: { directory: input["directory"], global: input["global"] },
+              body: { message: input["message"] },
+              successStatus: 200,
+              declaredStatuses: [400, 401, 404],
+              empty: false,
+            },
+            requestOptions,
+          ),
+        push: (input?: ServerOpencodexVcsPushInput, requestOptions?: RequestOptions) =>
+          request<ServerOpencodexVcsPushOutput>(
+            {
+              method: "POST",
+              path: `/vcs/push`,
+              query: { directory: input?.["directory"], global: input?.["global"] },
+              successStatus: 200,
+              declaredStatuses: [400, 401, 404],
+              empty: false,
+            },
+            requestOptions,
+          ),
+        operation: (input: ServerOpencodexVcsOperationInput, requestOptions?: RequestOptions) =>
+          request<ServerOpencodexVcsOperationOutput>(
+            {
+              method: "POST",
+              path: `/vcs/operation`,
+              query: { directory: input["directory"], global: input["global"] },
+              body: { action: input["action"], argument: input["argument"] },
+              successStatus: 200,
+              declaredStatuses: [400, 401, 404],
+              empty: false,
+            },
+            requestOptions,
+          ),
+        history: (input?: ServerOpencodexVcsHistoryInput, requestOptions?: RequestOptions) =>
+          request<ServerOpencodexVcsHistoryOutput>(
+            {
+              method: "GET",
+              path: `/vcs/history`,
+              query: { directory: input?.["directory"], limit: input?.["limit"] },
+              successStatus: 200,
+              declaredStatuses: [400, 401, 404],
+              empty: false,
+            },
+            requestOptions,
+          ),
+      },
+      worktree: {
+        details: (input?: ServerOpencodexWorktreeDetailsInput, requestOptions?: RequestOptions) =>
+          request<ServerOpencodexWorktreeDetailsOutput>(
+            {
+              method: "GET",
+              path: `/experimental/worktree/details`,
+              query: { directory: input?.["directory"], global: input?.["global"] },
+              successStatus: 200,
+              declaredStatuses: [400, 401, 404],
+              empty: false,
+            },
+            requestOptions,
+          ),
+        reset: (input: ServerOpencodexWorktreeResetInput, requestOptions?: RequestOptions) =>
+          request<ServerOpencodexWorktreeResetOutput>(
+            {
+              method: "POST",
+              path: `/experimental/worktree/reset`,
+              query: { directory: input["directory"], global: input["global"] },
+              body: { worktree: input["worktree"] },
+              successStatus: 204,
+              declaredStatuses: [400, 401, 404],
+              empty: true,
+            },
+            requestOptions,
+          ),
+      },
+      goal: {
+        get: (input: ServerOpencodexGoalGetInput, requestOptions?: RequestOptions) =>
+          request<ServerOpencodexGoalGetOutput>(
+            {
+              method: "GET",
+              path: `/experimental/goal/${encodeURIComponent(input.sessionID)}`,
+              query: { directory: input["directory"], global: input["global"] },
+              successStatus: 200,
+              declaredStatuses: [400, 401, 404],
+              empty: false,
+            },
+            requestOptions,
+          ),
+        status: (input: ServerOpencodexGoalStatusInput, requestOptions?: RequestOptions) =>
+          request<ServerOpencodexGoalStatusOutput>(
+            {
+              method: "POST",
+              path: `/experimental/goal/${encodeURIComponent(input.sessionID)}/status`,
+              query: { directory: input["directory"], global: input["global"] },
+              body: { status: input["status"] },
+              successStatus: 200,
+              declaredStatuses: [400, 401, 404],
+              empty: false,
+            },
+            requestOptions,
+          ),
+        clear: (input: ServerOpencodexGoalClearInput, requestOptions?: RequestOptions) =>
+          request<ServerOpencodexGoalClearOutput>(
+            {
+              method: "DELETE",
+              path: `/experimental/goal/${encodeURIComponent(input.sessionID)}`,
+              query: { directory: input["directory"], global: input["global"] },
+              successStatus: 200,
+              declaredStatuses: [400, 401, 404],
+              empty: false,
+            },
+            requestOptions,
+          ),
+      },
+      hooks: {
+        get: (input?: ServerOpencodexHooksGetInput, requestOptions?: RequestOptions) =>
+          request<ServerOpencodexHooksGetOutput>(
+            {
+              method: "GET",
+              path: `/experimental/hooks`,
+              query: { directory: input?.["directory"], global: input?.["global"] },
+              successStatus: 200,
+              declaredStatuses: [400, 401, 404],
+              empty: false,
+            },
+            requestOptions,
+          ),
+        update: (input: ServerOpencodexHooksUpdateInput, requestOptions?: RequestOptions) =>
+          request<ServerOpencodexHooksUpdateOutput>(
+            {
+              method: "PUT",
+              path: `/experimental/hooks`,
+              query: { directory: input["directory"], global: input["global"] },
+              body: { hooks: input["hooks"] },
+              successStatus: 200,
+              declaredStatuses: [400, 401, 404],
+              empty: false,
+            },
+            requestOptions,
+          ),
+        run: (input: ServerOpencodexHooksRunInput, requestOptions?: RequestOptions) =>
+          request<ServerOpencodexHooksRunOutput>(
+            {
+              method: "POST",
+              path: `/experimental/hooks/run`,
+              query: { directory: input["directory"], global: input["global"] },
+              body: { event: input["event"] },
+              successStatus: 200,
+              declaredStatuses: [400, 401, 404],
+              empty: false,
+            },
+            requestOptions,
+          ),
+      },
+      memory: {
+        get: (input: ServerOpencodexMemoryGetInput, requestOptions?: RequestOptions) =>
+          request<ServerOpencodexMemoryGetOutput>(
+            {
+              method: "GET",
+              path: `/experimental/memory/${encodeURIComponent(input.sourceID)}`,
+              query: { directory: input["directory"], global: input["global"] },
+              successStatus: 200,
+              declaredStatuses: [400, 401, 404],
+              empty: false,
+            },
+            requestOptions,
+          ),
+        update: (input: ServerOpencodexMemoryUpdateInput, requestOptions?: RequestOptions) =>
+          request<ServerOpencodexMemoryUpdateOutput>(
+            {
+              method: "PUT",
+              path: `/experimental/memory/${encodeURIComponent(input.sourceID)}`,
+              query: { directory: input["directory"], global: input["global"] },
+              body: { content: input["content"] },
+              successStatus: 200,
+              declaredStatuses: [400, 401, 404],
+              empty: false,
+            },
+            requestOptions,
+          ),
+        capture: (input: ServerOpencodexMemoryCaptureInput, requestOptions?: RequestOptions) =>
+          request<ServerOpencodexMemoryCaptureOutput>(
+            {
+              method: "POST",
+              path: `/experimental/memory/capture`,
+              query: { directory: input["directory"], global: input["global"] },
+              body: { content: input["content"] },
+              successStatus: 200,
+              declaredStatuses: [400, 401, 404],
+              empty: false,
+            },
+            requestOptions,
+          ),
+      },
+      checkpoint: {
+        list: (input?: ServerOpencodexCheckpointListInput, requestOptions?: RequestOptions) =>
+          request<ServerOpencodexCheckpointListOutput>(
+            {
+              method: "GET",
+              path: `/experimental/checkpoint`,
+              query: { directory: input?.["directory"], sessionID: input?.["sessionID"] },
+              successStatus: 200,
+              declaredStatuses: [400, 401, 404],
+              empty: false,
+            },
+            requestOptions,
+          ),
+        create: (input: ServerOpencodexCheckpointCreateInput, requestOptions?: RequestOptions) =>
+          request<ServerOpencodexCheckpointCreateOutput>(
+            {
+              method: "POST",
+              path: `/experimental/checkpoint`,
+              query: { directory: input["directory"], global: input["global"] },
+              body: { sessionID: input["sessionID"], label: input["label"] },
+              successStatus: 200,
+              declaredStatuses: [400, 401, 404],
+              empty: false,
+            },
+            requestOptions,
+          ),
+        restore: (input: ServerOpencodexCheckpointRestoreInput, requestOptions?: RequestOptions) =>
+          request<ServerOpencodexCheckpointRestoreOutput>(
+            {
+              method: "POST",
+              path: `/experimental/checkpoint/restore`,
+              query: { directory: input["directory"], global: input["global"] },
+              body: { id: input["id"] },
+              successStatus: 200,
+              declaredStatuses: [400, 401, 404],
+              empty: false,
+            },
+            requestOptions,
+          ),
+        delete: (input: ServerOpencodexCheckpointDeleteInput, requestOptions?: RequestOptions) =>
+          request<ServerOpencodexCheckpointDeleteOutput>(
+            {
+              method: "DELETE",
+              path: `/experimental/checkpoint/${encodeURIComponent(input.checkpointID)}`,
+              query: { directory: input["directory"], global: input["global"] },
+              successStatus: 200,
+              declaredStatuses: [400, 401, 404],
+              empty: false,
+            },
+            requestOptions,
+          ),
+        diff: (input: ServerOpencodexCheckpointDiffInput, requestOptions?: RequestOptions) =>
+          request<ServerOpencodexCheckpointDiffOutput>(
+            {
+              method: "GET",
+              path: `/experimental/checkpoint/${encodeURIComponent(input.checkpointID)}/diff`,
+              query: { directory: input["directory"], global: input["global"] },
+              successStatus: 200,
+              declaredStatuses: [400, 401, 404],
+              empty: false,
+            },
+            requestOptions,
+          ),
+      },
     },
   }
 }

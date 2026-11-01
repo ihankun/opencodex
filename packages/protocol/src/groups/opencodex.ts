@@ -39,7 +39,9 @@ const WorktreeDetail = Schema.Struct({
   createdAt: Schema.Number,
   modifiedAt: Schema.Number,
 })
-const WorktreeResetPayload = Schema.Struct({ directory: Schema.String })
+// The query already carries `directory` for the location; name the reset target separately so
+// the generated client has one input per field.
+const WorktreeResetPayload = Schema.Struct({ worktree: Schema.String })
 const ConfigPatch = Schema.Record(Schema.String, Schema.Unknown)
 
 const Capabilities = Schema.Struct({

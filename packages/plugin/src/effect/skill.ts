@@ -11,7 +11,9 @@ export interface SkillEditor {
   remove(id: string): void
 }
 
-export interface SkillDomain extends SkillApi<unknown> {
+// Plugins get the registered-skills listing plus the editor hooks; marketplace browsing and
+// installation stay in the app surface.
+export interface SkillDomain extends Pick<SkillApi<unknown>, "list"> {
   readonly transform: Transform<SkillEditor>
   readonly reload: () => Effect.Effect<void>
 }
