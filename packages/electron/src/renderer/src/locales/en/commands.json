@@ -92,6 +92,7 @@
     "newSessionDesc": "Create a new chat session",
     "compactDesc": "Compact session by summarizing conversation history",
     "taskDesc": "Create an automation, for example /task daily at 18:00 summarize today's changes",
+    "reloadDesc": "Reload agents, commands, skills, MCP servers and plugins from your config",
     "noMatchingCommands": "No matching commands",
     "noCommandsAvailable": "No commands available"
   },

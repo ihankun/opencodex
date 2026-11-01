@@ -10,7 +10,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { MaximizeIcon, MinimizeIcon } from '../../../../components/Icons'
+import { CopyIcon, MaximizeIcon, MinimizeIcon } from '../../../../components/Icons'
 import { useFullscreen } from '../../../../contexts'
 import { useSyntaxHighlight } from '../../../../hooks/useSyntaxHighlight'
 import { useResponsiveMaxHeight } from '../../../../hooks/useResponsiveMaxHeight'
@@ -201,17 +201,20 @@ function TerminalSurface({
       >
         <div className="flex min-w-0 items-baseline gap-2">
           {cwd && <WorkingDirectoryPrompt cwd={cwd} />}
-          {onToggleFullscreen && (
-            <button
-              type="button"
-              onClick={onToggleFullscreen}
-              className="ml-auto inline-flex h-5 w-5 shrink-0 items-center justify-center rounded text-text-500 transition-colors hover:bg-bg-200/60 hover:text-text-100"
-              title={fullscreenLabel}
-              aria-label={fullscreenLabel}
-            >
-              {isFullscreen ? <MinimizeIcon size={12} /> : <MaximizeIcon size={12} />}
-            </button>
-          )}
+          <div className="ml-auto flex shrink-0 items-center gap-1">
+            {hasOutput && <ClickToCopyOutput output={outputSegments?.map((segment) => segment.text).join('') ?? ''} />}
+            {onToggleFullscreen && (
+              <button
+                type="button"
+                onClick={onToggleFullscreen}
+                className="inline-flex h-5 w-5 shrink-0 items-center justify-center rounded text-text-500 transition-colors hover:bg-bg-200/60 hover:text-text-100"
+                title={fullscreenLabel}
+                aria-label={fullscreenLabel}
+              >
+                {isFullscreen ? <MinimizeIcon size={12} /> : <MaximizeIcon size={12} />}
+              </button>
+            )}
+          </div>
         </div>
 
         {command && <ClickToCopyCommand command={command} />}
@@ -320,6 +323,38 @@ function ClickToCopyCommand({ command }: { command: string }) {
       </span>{' '}
       <HighlightedCommand command={command} />
     </div>
+  )
+}
+
+// ============================================
+// Click-to-Copy Output
+// ============================================
+
+function ClickToCopyOutput({ output }: { output: string }) {
+  const [copied, setCopied] = useState(false)
+
+  const handleClick = useCallback(async () => {
+    try {
+      await copyTextToClipboard(output)
+      setCopied(true)
+      setTimeout(() => setCopied(false), 1500)
+    } catch (err) {
+      clipboardErrorHandler('copy output', err)
+    }
+  }, [output])
+
+  return (
+    <button
+      type="button"
+      onClick={handleClick}
+      className={`inline-flex h-5 w-5 shrink-0 items-center justify-center rounded transition-colors hover:bg-bg-200/60 ${
+        copied ? 'text-success-100' : 'text-text-500 hover:text-text-100'
+      }`}
+      title={copied ? 'Copied!' : 'Copy output'}
+      aria-label={copied ? 'Copied' : 'Copy output'}
+    >
+      {copied ? '✓' : <CopyIcon size={12} />}
+    </button>
   )
 }
 

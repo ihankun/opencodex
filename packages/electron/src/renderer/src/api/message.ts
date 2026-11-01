@@ -3,6 +3,7 @@
 // 基于 @opencode-ai/sdk: /session/{sessionID}/message 相关接口
 // ============================================
 
+import { Identifier } from '@opencode/schema/identifier'
 import { getSDKClient, unwrap } from './sdk'
 import { formatPathForApi } from '../utils/directoryUtils'
 import type {
@@ -320,6 +321,7 @@ async function buildPromptParams(params: SendMessageParams): Promise<PromptParam
 
   return {
     sessionID: sessionId,
+    id: params.id,
     directory: formatPathForApi(directory),
     parts,
     model,
@@ -342,7 +344,7 @@ function escapeSessionReferenceAttribute(value: string) {
  */
 export async function sendMessage(params: SendMessageParams): Promise<SendMessageResponse> {
   const sdk = getSDKClient()
-  return unwrap<SendMessageResponse>(await sdk.session.prompt(await buildPromptParams(params)))
+  return unwrap<SendMessageResponse>(await sdk.session.prompt(await buildPromptParams(withAdmissionID(params))))
 }
 
 /**
@@ -350,10 +352,20 @@ export async function sendMessage(params: SendMessageParams): Promise<SendMessag
  */
 export async function sendMessageAsync(params: SendMessageParams): Promise<void> {
   const sdk = getSDKClient()
-  unwrap(await sdk.session.promptAsync(await buildPromptParams(params)))
+  const prompt = await buildPromptParams(withAdmissionID(params))
+  // Same contract as the official composer: the inbox ID is idempotent, so one retry with the
+  // identical payload recovers a lost response without admitting the prompt twice.
+  unwrap(await sdk.session.promptAsync(prompt).catch(() => sdk.session.promptAsync(prompt)))
 }
 
 export async function sendMessageAsyncToServer(serverId: string, params: SendMessageParams): Promise<void> {
   const sdk = getSDKClient(serverId)
-  unwrap(await sdk.session.promptAsync(await buildPromptParams(params)))
+  const prompt = await buildPromptParams(withAdmissionID(params))
+  unwrap(await sdk.session.promptAsync(prompt).catch(() => sdk.session.promptAsync(prompt)))
+}
+
+function withAdmissionID(params: SendMessageParams): SendMessageParams {
+  // Same shape as SessionMessage.ID.create(); the identifier module stays free of the Schema
+  // runtime, which must not be pulled into the renderer bundle just to mint an inbox ID.
+  return params.id ? params : { ...params, id: `msg_${Identifier.ascending()}` }
 }

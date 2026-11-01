@@ -38,6 +38,7 @@ import {
   getSessionChildren,
   executeCommand,
   summarizeSession,
+  reloadConfig,
   updateSession,
   createWorktree,
   forkSession,
@@ -1127,6 +1128,19 @@ export function useChatSession({
           return true
         } catch (err) {
           handleError('create scheduled task', err)
+          return false
+        }
+      }
+
+      if (command === 'reload') {
+        try {
+          await reloadConfig()
+          await refetchModels()
+          const reloadedAgents = await getSelectableAgents(effectiveDirectory)
+          setAgents(reloadedAgents)
+          return true
+        } catch (err) {
+          handleError('reload configuration', err)
           return false
         }
       }

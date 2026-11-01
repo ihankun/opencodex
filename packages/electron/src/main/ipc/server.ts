@@ -1,9 +1,9 @@
 import { ipcMain } from "electron"
-import type { SidecarHandle } from "../server"
+import type { ServerHandle } from "../server"
 import type { AssertIpcSender } from "./shared"
 
 type ServerState =
-  | { status: "online"; server: SidecarHandle["state"] }
+  | { status: "online"; server: ServerHandle["state"] }
   | { status: "starting"; error?: string }
 
 export function registerServerIpc(input: {

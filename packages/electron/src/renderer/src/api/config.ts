@@ -41,6 +41,15 @@ export async function updateGlobalConfig(config: Config): Promise<Config> {
 }
 
 /**
+ * 重新加载配置：服务端会重建所有已加载 location 的 agents / commands /
+ * skills / MCP / plugins，让修改后的配置无需重启应用即可生效。
+ */
+export async function reloadConfig(): Promise<void> {
+  const sdk = getSDKClient()
+  unwrap(await sdk.location.reload())
+}
+
+/**
  * 获取 provider 配置列表
  */
 export async function getProviderConfigs(directory?: string): Promise<ProvidersResponse> {

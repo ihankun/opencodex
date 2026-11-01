@@ -49,6 +49,8 @@ export interface RevertedMessage {
 }
 
 export interface SendMessageParams {
+  /** Client-minted inbox ID; a retried admission with the same ID cannot duplicate the prompt. */
+  id?: string
   sessionId: string
   text: string
   attachments: Attachment[]

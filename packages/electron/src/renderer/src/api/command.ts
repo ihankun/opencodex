@@ -23,6 +23,7 @@ function getFrontendCommands(): Command[] {
     { name: 'new', description: i18n.t('commands:slashCommand.newSessionDesc'), source: 'frontend' },
     { name: 'compact', description: i18n.t('commands:slashCommand.compactDesc'), source: 'frontend' },
     { name: 'task', description: i18n.t('commands:slashCommand.taskDesc'), source: 'frontend' },
+    { name: 'reload', description: i18n.t('commands:slashCommand.reloadDesc'), source: 'frontend' },
   ]
 }
 

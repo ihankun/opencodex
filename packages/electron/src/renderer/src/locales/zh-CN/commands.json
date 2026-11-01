@@ -92,6 +92,7 @@
     "newSessionDesc": "创建新的对话会话",
     "compactDesc": "通过总结对话历史来压缩当前会话",
     "taskDesc": "创建自动化任务，例如 /task 每天18点总结今天修改的内容",
+    "reloadDesc": "重新加载 agents、命令、技能、MCP 和插件配置",
     "noMatchingCommands": "没有匹配的命令",
     "noCommandsAvailable": "没有可用的命令"
   },

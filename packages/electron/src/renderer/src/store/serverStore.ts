@@ -189,6 +189,13 @@ class ServerStore {
   private localServerUrlOverride: string | null = null
   private loadedCredentialIds = new Set<string>()
   private credentialLoads = new Map<string, Promise<void>>()
+  // Read generations guard against a slow credential load overwriting a fresher
+  // per-run credential published by the managed server.
+  private credentialGenerations = new Map<string, number>()
+  // 桌面端由主进程管理 sidecar：启动/重启期间不要把它当成连接失败，
+  // 否则渲染器会在服务器就绪前显示 API 错误。
+  private localServerStatus: 'starting' | 'online' | 'failed' =
+    typeof window !== 'undefined' && 'customOpenCode' in window ? 'starting' : 'online'
 
   // server 切换监听器（用于触发 SSE 重连等副作用，避免循环依赖）
   private serverChangeListeners: Set<(newServerId: string, reason: ServerChangeReason) => void> = new Set()
@@ -288,17 +295,22 @@ class ServerStore {
     if (!this.supportsSecureCredentials() || this.loadedCredentialIds.has(serverId)) return Promise.resolve()
     const pending = this.credentialLoads.get(serverId)
     if (pending) return pending
+    const generation = this.credentialGenerations.get(serverId) ?? 0
     const load = (async () => {
       const index = this.servers.findIndex(server => server.id === serverId)
       if (index === -1) return
       const legacy = this.servers[index].auth
       if (legacy) {
         await window.customOpenCode.setServerCredential(serverId, legacy)
+        if (this.credentialGenerations.get(serverId) !== generation) return
         this.loadedCredentialIds.add(serverId)
         this.saveToStorage()
         return
       }
       const credential = await window.customOpenCode.serverCredential(serverId)
+      // A managed sidecar can publish its new per-run password while the stored
+      // credential is still being read. Keep the fresher one.
+      if ((this.credentialGenerations.get(serverId) ?? 0) !== generation) return
       this.loadedCredentialIds.add(serverId)
       if (!credential) return
       this.servers[index] = { ...this.servers[index], auth: credential }
@@ -314,6 +326,16 @@ class ServerStore {
     void window.customOpenCode.setServerCredential(id, auth).catch(error => {
       console.error('Failed to update secure server credential', error)
     })
+  }
+
+  private async refreshLocalCredential(): Promise<boolean> {
+    if (typeof window === 'undefined' || !window.customOpenCode?.server) return false
+    const state = await window.customOpenCode.server().catch(() => undefined)
+    if (!state || state.status !== 'online' || !state.server.password) return false
+    const auth = { username: state.server.username, password: state.server.password }
+    const current = this.servers.find(server => server.id === this.DEFAULT_SERVER_ID)?.auth
+    if (current?.username === auth.username && current.password === auth.password) return false
+    return this.updateServer(this.DEFAULT_SERVER_ID, { auth })
   }
 
   // ============================================
@@ -507,6 +529,7 @@ class ServerStore {
       this.localServerUrlOverride = null
     }
     if (Object.prototype.hasOwnProperty.call(updates, 'auth')) {
+      this.credentialGenerations.set(id, (this.credentialGenerations.get(id) ?? 0) + 1)
       this.loadedCredentialIds.add(id)
       this.persistCredential(id, updates.auth ?? null)
     }
@@ -516,6 +539,17 @@ class ServerStore {
       this.notifyServerChange(id, updates.url !== undefined ? 'server-update' : 'credential-change')
     }
     return true
+  }
+
+  setLocalServerStatus(status: 'starting' | 'online' | 'failed'): void {
+    if (this.localServerStatus === status) return
+    this.localServerStatus = status
+    if (status === 'starting') {
+      // 使启动前发出的健康检查结果失效，避免它把 checking 覆盖成 offline。
+      this.healthCheckSeqMap.set(this.DEFAULT_SERVER_ID, (this.healthCheckSeqMap.get(this.DEFAULT_SERVER_ID) ?? 0) + 1)
+      this.healthMap.set(this.DEFAULT_SERVER_ID, { status: 'checking' })
+    }
+    this.notify()
   }
 
   setLocalServerRuntimeUrl(url: string): boolean {
@@ -546,6 +580,7 @@ class ServerStore {
     this.clockCalibrationMap.delete(id)
     this.loadedCredentialIds.delete(id)
     this.credentialLoads.delete(id)
+    this.credentialGenerations.delete(id)
     this.persistCredential(id, null)
 
     // 如果删除的是当前选中的，切换到默认
@@ -599,12 +634,19 @@ class ServerStore {
   /**
    * 检查服务器健康状态
    */
-  async checkHealth(serverId: string): Promise<ServerHealth> {
-    await this.ensureCredential(serverId)
+  async checkHealth(serverId: string, retryAuth = true): Promise<ServerHealth> {
     const storedServer = this.servers.find(s => s.id === serverId)
     if (!storedServer) {
       return { status: 'error', error: 'Server not found' }
     }
+    // 受管 sidecar 尚未就绪：保持 checking，避免把启动延迟当成断线。
+    if (serverId === this.DEFAULT_SERVER_ID && this.localServerStatus === 'starting') {
+      const health: ServerHealth = { status: 'checking' }
+      this.healthMap.set(serverId, health)
+      this.notify()
+      return health
+    }
+    await this.ensureCredential(serverId)
     const server = this.withRuntimeServerUrl(storedServer)
     const checkSeq = (this.healthCheckSeqMap.get(serverId) ?? 0) + 1
     this.healthCheckSeqMap.set(serverId, checkSeq)
@@ -701,6 +743,12 @@ class ServerStore {
         }
         return commitHealth(health)
       } else if (response.status === 401) {
+        // 受管 sidecar 的密码每轮都会变化。若本地凭据仍是旧的，先从主进程
+        // 取回当前密码并重试一次，避免必须重启应用才能恢复。
+        if (serverId === this.DEFAULT_SERVER_ID && retryAuth) {
+          const refreshed = await this.refreshLocalCredential()
+          if (refreshed) return this.checkHealth(serverId, false)
+        }
         // 认证失败
         const health: ServerHealth = {
           status: 'unauthorized',

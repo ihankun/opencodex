@@ -192,26 +192,41 @@ async function buildPromptInput(input: Json) {
       })
     const syntheticParts = texts.filter((part) => part.synthetic === true)
     const displayParts = texts.filter((part) => part.synthetic !== true)
+    const model = input.model as Json | undefined
+    const metadata = {
+      ...(syntheticParts.length > 0
+        ? {
+            opencodex: {
+              parts: [
+                ...syntheticParts.map((part) => ({
+                  type: "text",
+                  text: part.text,
+                  synthetic: true,
+                  metadata: part.metadata,
+                })),
+                ...displayParts.map((part) => ({ type: "text", text: part.text })),
+              ],
+            },
+          }
+        : {}),
+      // The official composer records the committed selection on the admission so the optimistic
+      // row and its echo render the same agent/model even before the switch is observed.
+      ...(typeof input.agent === "string" && input.agent ? { agent: input.agent } : {}),
+      ...(model && typeof model.providerID === "string" && typeof model.modelID === "string"
+        ? {
+            model: {
+              providerID: model.providerID,
+              modelID: model.modelID,
+              ...(typeof input.variant === "string" ? { variant: input.variant } : {}),
+            },
+          }
+        : {}),
+    }
     return {
       text: texts.map((part) => String(part.text)).join("\n"),
       files,
       agents,
-      metadata:
-        syntheticParts.length > 0
-          ? ({
-              opencodex: {
-                parts: [
-                  ...syntheticParts.map((part) => ({
-                    type: "text",
-                    text: part.text,
-                    synthetic: true,
-                    metadata: part.metadata,
-                  })),
-                  ...displayParts.map((part) => ({ type: "text", text: part.text })),
-                ],
-              },
-            } as never)
-          : undefined,
+      metadata: Object.keys(metadata).length > 0 ? (metadata as never) : undefined,
     }
   }
 
@@ -251,6 +266,29 @@ async function buildPromptInput(input: Json) {
     const message = result.data.find((item): item is SessionMessageAssistant => item.type === "assistant")
     if (!message) return undefined
     return projectMessages([message], sessionID)[0]
+  }
+
+  // V2 pages messages (default 50). Load the newest window backwards and reverse
+  // it so long sessions keep their full chronological history.
+  async function listAllMessages(sessionID: string, limit?: number): Promise<MessageWithParts[]> {
+    const collected: Parameters<typeof projectMessages>[0] = []
+    let cursor: string | undefined
+    for (let page = 0; page < 200; page++) {
+      const remaining = limit === undefined ? 200 : limit - collected.length
+      const result = await v2.message.list({
+        sessionID,
+        limit: Math.min(remaining, 200),
+        order: cursor ? undefined : "desc",
+        cursor,
+      })
+      collected.push(...result.data)
+      const next = result.cursor.next ?? undefined
+      if (result.data.length === 0 || !next || next === cursor) break
+      if (limit !== undefined && collected.length >= limit) break
+      cursor = next
+    }
+    if (limit !== undefined) collected.length = Math.min(collected.length, limit)
+    return projectMessages(collected.reverse(), sessionID)
   }
 
   async function* eventStream() {
@@ -302,18 +340,34 @@ async function buildPromptInput(input: Json) {
   return {
     session: {
       list: async (input: Json = {}) => {
-        const result = await v2.session.list({
-          directory: input.directory as string | undefined,
-          search: input.search as string | undefined,
-          limit: input.limit as number | undefined,
-          parentID: input.roots === true || input.roots === "true" ? null : undefined,
-          archived:
-            input.archived === true || input.archived === "true"
-              ? true
-              : false,
-        })
-        const data = result.data.map(projectSession)
-        return { data: typeof input.start === "number" ? data.slice(input.start) : data }
+        const limit =
+          typeof input.limit === "number" && input.limit > 0 ? Math.floor(input.limit) : undefined
+        const start = typeof input.start === "number" && input.start > 0 ? Math.floor(input.start) : 0
+        // Match the official `listAllSessions` helper: follow cursor.next until
+        // the requested window is filled, rather than silently truncating at the
+        // server's default page size.
+        const target = limit === undefined ? undefined : start + limit
+        const collected: Parameters<typeof projectSession>[0][] = []
+        let cursor: string | undefined
+        for (let page = 0; page < 200; page++) {
+          const result = await v2.session.list({
+            directory: input.directory as string | undefined,
+            search: input.search as string | undefined,
+            limit: target === undefined ? 100 : Math.min(target - collected.length, 100),
+            cursor,
+            parentID: input.roots === true || input.roots === "true" ? null : undefined,
+            archived:
+              input.archived === true || input.archived === "true"
+                ? true
+                : false,
+          })
+          collected.push(...result.data)
+          const next = result.cursor.next ?? undefined
+          if (result.data.length === 0 || !next || next === cursor) break
+          if (target !== undefined && collected.length >= target) break
+          cursor = next
+        }
+        return { data: collected.map(projectSession).slice(start, target) }
       },
       status: async (_input: Json = {}) => {
         const active = await v2.session.active()
@@ -323,12 +377,9 @@ async function buildPromptInput(input: Json) {
       },
       messages: async (input: Json) => {
         const sessionID = input.sessionID as string
-        const result = await v2.message.list({
-          sessionID,
-          limit: input.limit as number | undefined,
-          order: "asc",
-        })
-        return { data: projectMessages(result.data, sessionID) }
+        const limit =
+          typeof input.limit === "number" && input.limit > 0 ? Math.floor(input.limit) : undefined
+        return { data: await listAllMessages(sessionID, limit) }
       },
       get: async (input: Json) => ({
         data: projectSession(await v2.session.get({ sessionID: input.sessionID as string })),
@@ -397,8 +448,16 @@ async function buildPromptInput(input: Json) {
         return { data: true }
       },
       children: async (input: Json) => {
-        const result = await v2.session.list({ parentID: input.sessionID as string })
-        return { data: result.data.map(projectSession) }
+        const collected: Parameters<typeof projectSession>[0][] = []
+        let cursor: string | undefined
+        for (let page = 0; page < 20; page++) {
+          const result = await v2.session.list({ parentID: input.sessionID as string, limit: 100, cursor })
+          collected.push(...result.data)
+          const next = result.cursor.next ?? undefined
+          if (result.data.length === 0 || !next || next === cursor) break
+          cursor = next
+        }
+        return { data: collected.map(projectSession) }
       },
       diff: async (input: Json) => {
         const result = await v2.session.diff({
@@ -408,16 +467,29 @@ async function buildPromptInput(input: Json) {
         return { data: result as unknown as SnapshotFileDiff[] }
       },
       todo: async (input: Json) => {
-        const result = await v2.message.list({ sessionID: input.sessionID as string, order: "asc" })
-        for (const message of [...result.data].reverse()) {
-          if (message.type !== "assistant") continue
-          for (const content of [...message.content].reverse()) {
-            if (content.type !== "tool") continue
-            if (content.name !== "todowrite" && content.name !== "todo") continue
-            if (content.state.status !== "completed") continue
-            const todos = content.state.metadata?.todos
-            if (Array.isArray(todos)) return { data: todos as unknown as Todo[] }
+        // The latest todowrite usually sits in the newest messages, so scan
+        // backwards page by page instead of only looking at the first page.
+        let cursor: string | undefined
+        for (let page = 0; page < 20; page++) {
+          const result = await v2.message.list({
+            sessionID: input.sessionID as string,
+            limit: 100,
+            order: cursor ? undefined : "desc",
+            cursor,
+          })
+          for (const message of result.data) {
+            if (message.type !== "assistant") continue
+            for (const content of [...message.content].reverse()) {
+              if (content.type !== "tool") continue
+              if (content.name !== "todowrite" && content.name !== "todo") continue
+              if (content.state.status !== "completed") continue
+              const todos = content.state.metadata?.todos
+              if (Array.isArray(todos)) return { data: todos as unknown as Todo[] }
+            }
           }
+          const next = result.cursor.next ?? undefined
+          if (result.data.length === 0 || !next || next === cursor) break
+          cursor = next
         }
         return { data: [] as Todo[] }
       },
@@ -427,6 +499,7 @@ async function buildPromptInput(input: Json) {
         const payload = await buildPromptInput(input)
         await v2.session.prompt({
           sessionID,
+          id: typeof input.id === "string" ? input.id : undefined,
           text: payload.text,
           files: payload.files,
           agents: payload.agents,
@@ -444,6 +517,7 @@ async function buildPromptInput(input: Json) {
         const payload = await buildPromptInput(input)
         await v2.session.prompt({
           sessionID,
+          id: typeof input.id === "string" ? input.id : undefined,
           text: payload.text,
           files: payload.files,
           agents: payload.agents,
@@ -473,13 +547,9 @@ async function buildPromptInput(input: Json) {
 
     message: {
       list: async (input: Json) => {
-        const sessionID = input.sessionID as string
-        const result = await v2.message.list({
-          sessionID,
-          limit: input.limit as number | undefined,
-          order: "asc",
-        })
-        return { data: projectMessages(result.data, sessionID) }
+        const limit =
+          typeof input.limit === "number" && input.limit > 0 ? Math.floor(input.limit) : undefined
+        return { data: await listAllMessages(input.sessionID as string, limit) }
       },
     },
 
@@ -1060,18 +1130,39 @@ async function buildPromptInput(input: Json) {
       status: async (_input: Json = {}) => ({ data: [] as FormatterStatus[] }),
     },
 
+    location: {
+      reload: async (_input: Json = {}) => {
+        await v2.location.reload()
+        return { data: true }
+      },
+    },
+
     experimental: {
       session: {
         list: async (input: Json = {}) => {
-          const result = await v2.session.list({
-            search: input.search as string | undefined,
-            limit: input.limit as number | undefined,
-            archived:
-              input.archived === true || input.archived === "true"
-                ? true
-                : false,
-          })
-          return { data: result.data.map(projectSession) }
+          const limit =
+            typeof input.limit === "number" && input.limit > 0 ? Math.floor(input.limit) : undefined
+          const collected: Parameters<typeof projectSession>[0][] = []
+          let cursor: string | undefined
+          for (let page = 0; page < 200; page++) {
+            const result = await v2.session.list({
+              search: input.search as string | undefined,
+              limit: limit === undefined ? 100 : Math.min(limit - collected.length, 100),
+              cursor,
+              parentID: input.roots === true || input.roots === "true" ? null : undefined,
+              archived:
+                input.archived === true || input.archived === "true"
+                  ? true
+                  : false,
+            })
+            collected.push(...result.data)
+            const next = result.cursor.next ?? undefined
+            if (result.data.length === 0 || !next || next === cursor) break
+            if (limit !== undefined && collected.length >= limit) break
+            cursor = next
+          }
+          if (limit !== undefined) collected.length = Math.min(collected.length, limit)
+          return { data: collected.map(projectSession) }
         },
       },
       controlPlane: {

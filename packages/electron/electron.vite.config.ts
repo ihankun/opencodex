@@ -12,7 +12,6 @@ export default defineConfig({
       rollupOptions: {
         input: {
           index: "src/main/index.ts",
-          sidecar: "src/main/sidecar.ts",
           imBridgeSidecar: "vendor/opencode-im-bridge/src/index.ts",
         },
       },

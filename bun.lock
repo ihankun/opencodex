@@ -361,10 +361,11 @@
     },
     "packages/electron": {
       "name": "opencodex",
-      "version": "1.17.1",
+      "version": "2.0.0",
       "dependencies": {
         "@larksuiteoapi/node-sdk": "^1.59.0",
         "@opencode/client": "workspace:*",
+        "@opencode/schema": "workspace:*",
         "@wechatbot/wechatbot": "^2.0.1",
         "cron": "^3.5.0",
         "croner": "^9.1.0",

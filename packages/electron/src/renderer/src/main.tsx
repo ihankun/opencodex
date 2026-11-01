@@ -83,6 +83,14 @@ serverStore.onServerChange((serverId, reason) => {
 
   abortInFlightApiRequests("Server endpoint changed", serverId)
   invalidateSDKClient(serverId)
+
+  // 仅凭据变化（例如 sidecar 重启后的新密码）不改变服务器数据，
+  // 保留会话和消息，只重连即可，避免界面被清空。
+  if (reason === "credential-change") {
+    reconnectSSE()
+    return
+  }
+
   // 1. 清空内存中的 session/消息数据
   messageStore.clearAll()
   childSessionStore.clearAll()
@@ -109,8 +117,18 @@ function configureNativeShell() {
 async function initializeElectronService() {
   if (!window.customOpenCode) return
 
+  let resolveReady: () => void = () => {}
+  const ready = new Promise<void>((resolve) => {
+    resolveReady = resolve
+  })
   const applyServer = (state: Awaited<ReturnType<typeof window.customOpenCode.server>>) => {
-    if (state.status !== "online") return
+    if (state.status !== "online") {
+      // 启动或重启中：先保持 checking，服务器就绪后再更新地址与凭据。
+      serverStore.setLocalServerStatus(state.error ? "failed" : "starting")
+      if (state.error) resolveReady()
+      return
+    }
+    serverStore.setLocalServerStatus("online")
     serverStore.updateServer("local", {
       auth: state.server.password
         ? {
@@ -124,10 +142,14 @@ async function initializeElectronService() {
     if (serverStore.getActiveServerId() === "local") {
       serverStore.setActiveServer("local")
     }
+    resolveReady()
   }
 
   window.customOpenCode.onServerUpdated(applyServer)
   applyServer(await window.customOpenCode.server())
+  // 模型列表依赖已就绪的 sidecar；等第一次在线（或启动失败）后再拉取，
+  // 避免启动阶段把 transport 错误写进模型状态。
+  await ready
 }
 
 configureNativeShell()

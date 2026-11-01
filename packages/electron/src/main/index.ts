@@ -26,7 +26,7 @@ import type { ParseError } from "jsonc-parser"
 import { diagnosticLogTail, exportDebugLogs, initLogging, writeLog } from "./logging"
 import { createUnresponsiveSampler } from "./unresponsive"
 import { sandboxRuntimeRoot, spawnServer } from "./server"
-import type { SidecarHandle } from "./server"
+import type { ServerHandle } from "./server"
 import { startRendererServer, type RendererServerHandle } from "./rendererServer"
 import { TaskScheduler } from "./scheduler"
 import type { ScheduledTask, ScheduledTaskRun } from "./scheduler"
@@ -82,10 +82,14 @@ let mainWindow: BrowserWindow | undefined
 let internalBrowserWindow: BrowserWindow | undefined
 const internalBrowserPartition = "persist:opencodex-browser"
 let internalBrowserNetworkPolicyConfigured = false
-let server: SidecarHandle | undefined
+let server: ServerHandle | undefined
 let rendererServer: RendererServerHandle | undefined
 let initialServerStartup: Promise<void> | undefined
 let serverError: string | undefined
+let serverRestartTimer: ReturnType<typeof setTimeout> | undefined
+let serverStartup: Promise<void> | undefined
+let serverRestartAttempt = 0
+let serverStartedAt = 0
 let tray: Tray | undefined
 let badgeCount = 0
 let isQuitting = false
@@ -523,7 +527,15 @@ function updateBadge(count: number) {
   else app.dock?.setBadge("")
 }
 
-async function startServer(url: string) {
+function startServer() {
+  if (serverStartup) return serverStartup
+  serverStartup = startServerOnce().finally(() => {
+    serverStartup = undefined
+  })
+  return serverStartup
+}
+
+async function startServerOnce() {
   const startedAt = performance.now()
   try {
     serverError = undefined
@@ -536,15 +548,36 @@ async function startServer(url: string) {
           password: "",
         },
         stop: () => Promise.resolve(),
+        onExit: () => {},
       }
       writeLog("startup", "using e2e opencode server", { url: testServerUrl })
       mainWindow?.webContents.send("server:updated", currentServerState())
       return
     }
-    server = await spawnServer(app.getPath("userData"), allowedOrigins(url), {
+    const started = await spawnServer(app.getPath("userData"), {
       ...(await secureEnvironment()),
       OPENCODE_EXPERIMENTAL_BACKGROUND_SUBAGENTS: desktopPreferences.backgroundSubagents ? "true" : "false",
     })
+    // Quitting while the service was starting leaves nobody to stop it later.
+    if (isQuitting) {
+      await started.stop()
+      return
+    }
+    server = started
+    serverStartedAt = Date.now()
+    started.onExit((reason) => {
+      if (server !== started || isQuitting) return
+      server = undefined
+      // A crash after a stable run should restart immediately; a crash loop backs off.
+      if (Date.now() - serverStartedAt > 60_000) serverRestartAttempt = 0
+      writeLog("main", "opencode server exited unexpectedly", { reason })
+      mainWindow?.webContents.send("server:updated", currentServerState())
+      scheduleServerRestart()
+    })
+    // A replacement that stays up is healthy again; forget earlier crash retries.
+    setTimeout(() => {
+      if (server === started) serverRestartAttempt = 0
+    }, 60_000)
     writeLog("startup", "opencode server online", {
       durationMs: Math.round(performance.now() - startedAt),
       elapsedMs: Math.round(performance.now() - startupStartedAt),
@@ -555,7 +588,27 @@ async function startServer(url: string) {
     serverError = error instanceof Error ? error.message : String(error)
     writeLog("main", "failed to start opencode server", error)
     mainWindow?.webContents.send("server:updated", currentServerState())
+    scheduleServerRestart()
   }
+}
+
+const SERVER_RESTART_DELAYS = [1_000, 3_000, 10_000, 30_000, 60_000]
+
+function scheduleServerRestart() {
+  if (isQuitting || server || serverRestartTimer) return
+  if (serverRestartAttempt >= SERVER_RESTART_DELAYS.length) {
+    serverError = "opencode server exited repeatedly"
+    mainWindow?.webContents.send("server:updated", currentServerState())
+    return
+  }
+  const delay = SERVER_RESTART_DELAYS[serverRestartAttempt]
+  serverRestartAttempt += 1
+  writeLog("main", "scheduling opencode server restart", { delay, attempt: serverRestartAttempt })
+  serverRestartTimer = setTimeout(() => {
+    serverRestartTimer = undefined
+    if (isQuitting || server) return
+    void startServer()
+  }, delay)
 }
 
 async function syncImBridgeServer(localServerUrl: string) {
@@ -577,23 +630,16 @@ async function stopServer() {
 async function restartServer() {
   await initialServerStartup
   writeLog("main", "restarting opencode server")
+  if (serverRestartTimer) {
+    clearTimeout(serverRestartTimer)
+    serverRestartTimer = undefined
+  }
+  serverRestartAttempt = 0
   serverError = undefined
   await stopServer()
   mainWindow?.webContents.send("server:updated", currentServerState())
-  await startServer(rendererUrl())
+  await startServer()
   return currentServerState()
-}
-
-function allowedOrigins(url: string) {
-  // "null"：生产 renderer 从 file:// 加载时浏览器 origin 为 null，CORS 必须放行
-  const defaults = ["null", "opencodex://renderer", "http://localhost:46237", "http://127.0.0.1:46237"]
-  try {
-    const origin = new URL(url).origin
-    if (origin === "null") return defaults
-    return [...new Set([...defaults, origin])]
-  } catch {
-    return defaults
-  }
 }
 
 async function secureEnvironment() {
@@ -824,6 +870,9 @@ app.on("before-quit", (event) => {
   isStoppingForQuit = true
   draftsStore.flush()
   void Promise.all([taskScheduler.stop(), imBridgeService.stop()])
+    // A startup already in flight owns the service this quit must stop. Give it a moment to
+    // settle so the handle exists; a cold start normally finishes well inside this window.
+    .then(() => Promise.race([initialServerStartup, new Promise<void>((resolve) => setTimeout(resolve, 3_000))]))
     .then(stopServer)
     .finally(() => {
       draftsStore.close()
@@ -879,10 +928,10 @@ if (hasSingleInstanceLock)
       })
       configureAppPermissionHandlers()
       applyDesktopPreferences()
-      // 并行启动窗口和服务端：让 sidecar 就绪耗时被 renderer 加载掩盖
+      // 并行启动窗口和服务端：让服务就绪耗时被 renderer 加载掩盖
       await startRendererServerIfNeeded()
       const windowCreated = createWindow()
-      initialServerStartup = securityReady.then(() => startServer(rendererUrl()))
+      initialServerStartup = securityReady.then(() => startServer())
       void initialServerStartup
       await windowCreated
       void ensureTaskSchedulerStarted().catch((error) => writeLog("scheduler", "failed to initialize", error))
@@ -2839,7 +2888,7 @@ async function waitConsoleLogin(rawLogin: unknown): Promise<ConsoleLoginResult> 
 }
 
 async function performConsoleLoginWait(
-  current: SidecarHandle["state"],
+  current: ServerHandle["state"],
   login: ReturnType<typeof normalizeConsoleLogin>,
 ) {
   writeLog("main", "console login wait started", {
