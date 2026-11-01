@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect, useCallback, useMemo, useSyncExternalStore, useLayoutEffect, memo } from 'react'
 import { useTranslation } from 'react-i18next'
+import trayIcon from '../../../../../assets/opencode-tray.png'
 import { AttachmentPreview, type Attachment } from '../attachment'
 import {
   MentionMenu,
@@ -517,14 +518,14 @@ function NewTaskContextBar({ paneId, onApplyProfile, onPreflight }: { paneId: st
   }, [activeHealth, activeServer, dirtyCount, executionMode, onPreflight, projectProfile?.setupCommands.length, supportsWorktree])
 
   const triggerClass =
-    'inline-flex h-8 items-center gap-2 rounded-lg px-2 text-[length:var(--fs-sm)] font-normal text-text-100 transition-colors hover:bg-bg-200/70 disabled:opacity-60'
+    'inline-flex h-7 items-center gap-1.5 rounded-md px-2 text-[length:var(--fs-xs)] font-normal text-text-400 transition-colors hover:bg-bg-200/60 hover:text-text-100 disabled:opacity-60'
   const menuClass =
     'absolute bottom-full left-0 z-50 mb-2 max-h-64 min-w-60 overflow-y-auto rounded-xl border border-border-200/70 bg-bg-000 p-1 shadow-xl'
 
   return (
     <div
       ref={menuRef}
-      className="relative z-0 mx-3 -mb-px flex h-10 items-center gap-1 overflow-visible rounded-t-2xl bg-bg-200/45 px-4"
+      className="relative z-0 mb-1 flex h-8 items-center gap-1 overflow-visible px-1"
     >
       <div className="relative min-w-0">
         <button
@@ -2122,13 +2123,32 @@ function InputBoxComponent({
         {isStreaming ? t('inputBox.sending') : ''}
       </span>
       <div
-        className={`mx-auto pointer-events-auto transition-[max-width] duration-300 ease-in-out max-w-[min(92%,68rem)] ${isCompact ? 'px-4' : 'px-4 lg:px-6'}`}
-        style={{ paddingBottom: bottomDockPadding }}
+        className={`mx-auto pointer-events-auto transition-[max-width] duration-300 ease-in-out ${homeMode ? 'max-w-[min(92%,52rem)]' : 'max-w-[min(92%,68rem)]'} ${isCompact ? 'px-4' : 'px-4 lg:px-6'}`}
+        style={{ paddingBottom: homeMode ? undefined : bottomDockPadding }}
       >
         {homeMode && (
-          <h1 className={`truncate text-center text-[1.75rem] font-normal leading-tight text-text-100 md:text-[2rem] ${isCompact ? 'mb-10' : 'mb-[clamp(5rem,16vh,10rem)]'}`}>
-            {homeTitle}
-          </h1>
+          <div className={`flex items-center justify-center gap-3 ${isCompact ? 'mb-5' : 'mb-6'}`}>
+            <span
+              aria-hidden="true"
+              className="size-8 shrink-0 bg-text-100"
+              style={{
+                maskImage: `url(${trayIcon})`,
+                WebkitMaskImage: `url(${trayIcon})`,
+                maskSize: 'contain',
+                WebkitMaskSize: 'contain',
+                maskRepeat: 'no-repeat',
+                WebkitMaskRepeat: 'no-repeat',
+                maskPosition: 'center',
+                WebkitMaskPosition: 'center',
+              }}
+            />
+            <h1 className="min-w-0 truncate text-[1.6rem] font-normal leading-tight text-text-100 md:text-[1.9rem]">
+              {homeTitle}
+            </h1>
+            <span className="shrink-0 rounded-full border border-border-200/60 px-2 py-0.5 font-mono text-[length:var(--fs-xxs)] text-text-400">
+              v{__APP_VERSION__}
+            </span>
+          </div>
         )}
         <div
           ref={contentWrapRef}
@@ -2245,7 +2265,7 @@ function InputBoxComponent({
               onDragOver={handleDragOver}
               onDragLeave={handleDragLeave}
               onDrop={handleDrop}
-              className={`glass rounded-2xl relative z-10 flex flex-col overflow-hidden focus-within:outline-none shadow-lg ${!sessionId ? 'min-h-[98px]' : ''} ${
+              className={`${homeMode ? 'glass-alt' : 'glass'} rounded-2xl relative z-10 flex flex-col overflow-hidden focus-within:outline-none shadow-xl ${!sessionId ? 'min-h-[112px]' : ''} ${
                 isDragging || isInternalFileDragging
                   ? 'border border-accent-main-100 ring-2 ring-accent-main-100/30'
                   : isStreaming

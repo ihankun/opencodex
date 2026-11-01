@@ -52,16 +52,13 @@ import { uiErrorHandler, isSameDirectory, collectActiveDirectories } from './uti
 import { initNotificationSound } from './utils/notificationSoundBridge'
 import { createPtySession } from './api/pty'
 import type { TerminalTab } from './store/layoutStore'
-import type { SettingsTab } from './features/settings/SettingsDialog'
+import { SettingsPage, type SettingsTab } from './features/settings/SettingsDialog'
 import { isElectron, getDesktopPlatform } from './utils/platform'
 import { InternalDragLayer } from './components/InternalDragLayer'
 import { completeOnboarding, resetOnboarding, shouldShowOnboarding } from './store/onboardingStore'
 import { insertComposerDraft } from './utils/composerDraft'
 import type { CustomOpenCodeDeepLink } from '../../shared/deepLinks'
 
-const SettingsPage = lazy(() =>
-  import('./features/settings/SettingsDialog').then(module => ({ default: module.SettingsPage })),
-)
 const CommandPalette = lazy(() =>
   import('./components/CommandPalette').then(module => ({ default: module.CommandPalette })),
 )
@@ -1313,11 +1310,13 @@ function App() {
         <ElectronWindowsTitlebar
           sidebarExpanded={sidebarExpanded}
           onToggleSidebar={handleToggleSidebar}
+          onNewTask={handleNewSession}
           onOpenSidebarPreview={openSidebarPreview}
           onCloseSidebarPreview={closeSidebarPreview}
           onOpenSearch={() => setSessionSearchOpen(true)}
           onOpenNotifications={() => setNotificationCenterOpen(true)}
           sidebarTitle={sidebarExpanded ? t('chat:sidebar.collapseSidebar') : t('chat:sidebar.expandSidebar')}
+          newTaskTitle={t('chat:sidebar.newChat')}
           searchTitle={t('chat:sidebar.search')}
           notificationsTitle={t('chat:sidebar.notifications')}
           backTitle={t('components:desktopTitlebar.goBack')}
@@ -1517,10 +1516,13 @@ function App() {
                 </div>
               )}
 
-              <div className="chat-surface flex-1 flex min-w-0 h-full">
+              <div
+                className="chat-surface flex-1 flex min-w-0 h-full p-1"
+                style={{ backgroundColor: 'hsl(var(--sidebar-bg))' }}
+              >
                 <div
                   ref={surfaceRef}
-                  className="chat-surface-card flex-1 flex flex-col min-w-0 overflow-hidden"
+                  className="chat-surface-card flex-1 flex flex-col min-w-0 overflow-hidden rounded-xl border border-border-200/40 bg-[hsl(var(--chat-bg))]"
                   style={{ minWidth: `${CHAT_SURFACE_MIN_WIDTH}px` }}
                 >
                   {utilityPage === 'tasks' || utilityPage === 'plugins' ? (
@@ -1547,11 +1549,7 @@ function App() {
             </>
           )}
           </div>
-          {utilityPage === 'settings' && (
-            <Suspense fallback={null}>
-              <SettingsPage onBack={closeSettingsPage} />
-            </Suspense>
-          )}
+          {utilityPage === 'settings' && <SettingsPage onBack={closeSettingsPage} />}
           <ToastContainer onOpenAbout={openAboutSettings} />
         </div>
 

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
-import { ChevronLeftIcon, ChevronRightIcon, SearchIcon, SidebarIcon, BellIcon } from './Icons'
+import { ChevronLeftIcon, ChevronRightIcon, SearchIcon, SidebarIcon, BellIcon, CirclePlusIcon } from './Icons'
 import { DESKTOP_TITLEBAR_HEIGHT, DESKTOP_TITLEBAR_Z_INDEX } from '../constants/desktopWindow'
 import { useTranslation } from 'react-i18next'
 import { canGoBack, canGoForward, subscribe } from '../store/navigationHistoryStore'
@@ -8,11 +8,13 @@ import { useUnreadNotificationCount } from '../store/notificationStore'
 interface ElectronWindowsTitlebarProps {
   sidebarExpanded: boolean
   onToggleSidebar: () => void
+  onNewTask: () => void
   onOpenSidebarPreview: () => void
   onCloseSidebarPreview: () => void
   onOpenSearch: () => void
   onOpenNotifications: () => void
   sidebarTitle: string
+  newTaskTitle: string
   searchTitle: string
   notificationsTitle: string
   backTitle: string
@@ -24,11 +26,13 @@ interface ElectronWindowsTitlebarProps {
 export function ElectronWindowsTitlebar({
   sidebarExpanded,
   onToggleSidebar,
+  onNewTask,
   onOpenSidebarPreview,
   onCloseSidebarPreview,
   onOpenSearch,
   onOpenNotifications,
   sidebarTitle,
+  newTaskTitle,
   searchTitle,
   notificationsTitle,
   backTitle,
@@ -77,7 +81,15 @@ export function ElectronWindowsTitlebar({
   return (
     <header
       className="electron-windows-titlebar window-drag-region relative flex shrink-0 items-center"
-      style={{ height: DESKTOP_TITLEBAR_HEIGHT, zIndex: DESKTOP_TITLEBAR_Z_INDEX }}
+      style={{
+        height: DESKTOP_TITLEBAR_HEIGHT,
+        zIndex: DESKTOP_TITLEBAR_Z_INDEX,
+        backgroundColor: 'hsl(var(--sidebar-bg))',
+        // The rounded chat panel draws its own edge; a titlebar underline would add a second frame.
+        backgroundImage: 'none',
+        // The panel starts below a small gutter; balance it with the same visual margin on top.
+        paddingTop: 4,
+      }}
     >
       <div className="flex items-center gap-2 pl-3">
         <button
@@ -97,6 +109,17 @@ export function ElectronWindowsTitlebar({
         >
           <SidebarIcon size={18} />
         </button>
+        {!sidebarExpanded && (
+          <button
+            type="button"
+            onClick={onNewTask}
+            aria-label={newTaskTitle}
+            title={newTaskTitle}
+            className="electron-windows-titlebar-btn window-no-drag"
+          >
+            <CirclePlusIcon size={18} />
+          </button>
+        )}
         <button
           type="button"
           onClick={onOpenSearch}

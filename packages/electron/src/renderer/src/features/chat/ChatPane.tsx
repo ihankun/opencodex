@@ -942,7 +942,11 @@ export const ChatPane = memo(function ChatPane({
 
       <div
         ref={inputBoxWrapperRef}
-        className="absolute bottom-0 left-0 right-0 z-10 pointer-events-none"
+        className={
+          homeComposer
+            ? 'absolute left-0 right-0 top-1/2 z-10 -translate-y-1/2 pointer-events-none'
+            : 'absolute bottom-0 left-0 right-0 z-10 pointer-events-none'
+        }
       >
         {/* 输入框上缘的滚动渐隐带：仅当不在底部（内容正滑向输入框）时显示，消息经过
             玻璃顶边前在这里渐隐，玻璃实心/毛玻璃均可见；回到底部时整带隐藏，
@@ -951,7 +955,7 @@ export const ChatPane = memo(function ChatPane({
         <div
           aria-hidden
           className={`pointer-events-none absolute inset-x-0 backdrop-blur-md transition-opacity duration-150 ${
-            isAtBottom ? 'opacity-0' : 'opacity-100'
+            homeComposer ? 'hidden' : isAtBottom ? 'opacity-0' : 'opacity-100'
           }`}
           style={{
             top: glassTopOffset - 40,

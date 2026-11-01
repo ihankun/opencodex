@@ -192,10 +192,7 @@ function StartupFallback() {
           <span className="startup-logo-halo" aria-hidden="true" />
           <img className="startup-logo" src={appIcon} alt="" />
         </div>
-        <div className="startup-title">正在启动 OpenCodex</div>
-        <div className="startup-progress" aria-hidden="true">
-          <span />
-        </div>
+        <div className="startup-version">v{__APP_VERSION__}</div>
       </div>
     </div>
   )

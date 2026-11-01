@@ -24,9 +24,182 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="apple-mobile-web-app-title" content="OpenCodex" />
     <link rel="apple-touch-icon" href="/opencode.svg" />
+
+    <!--
+      Static first paint. It is inside #root so React replaces it on mount, and it is inlined
+      here so the window never shows an empty frame while bootstrap waits for settings and the
+      main bundle.
+    -->
+    <style>
+      html,
+      body {
+        height: 100%;
+        margin: 0;
+      }
+      body {
+        background: #0b0c10;
+      }
+      #root {
+        height: 100%;
+      }
+      .boot-splash {
+        position: fixed;
+        inset: 0;
+        isolation: isolate;
+        display: grid;
+        place-items: center;
+        overflow: hidden;
+        background:
+          radial-gradient(circle at 50% 44%, hsl(210 18% 10% / 0.55), transparent 42%),
+          linear-gradient(145deg, #0b0c10, #11131a);
+      }
+      .boot-splash::before,
+      .boot-splash::after {
+        position: absolute;
+        z-index: -1;
+        border-radius: 999px;
+        content: '';
+        pointer-events: none;
+      }
+      .boot-splash::before {
+        width: min(64rem, 72vmax);
+        height: min(64rem, 72vmax);
+        top: -50vmax;
+        left: -24vmax;
+        opacity: 0.36;
+        background: radial-gradient(circle, rgb(124 92 255 / 0.6) 0%, transparent 66%);
+        filter: blur(64px);
+        animation: boot-drift-a 13s ease-in-out infinite alternate;
+      }
+      .boot-splash::after {
+        width: min(58rem, 64vmax);
+        height: min(58rem, 64vmax);
+        right: -26vmax;
+        bottom: -44vmax;
+        opacity: 0.28;
+        background: radial-gradient(circle, rgb(56 189 248 / 0.55) 0%, transparent 68%);
+        filter: blur(72px);
+        animation: boot-drift-b 16s ease-in-out infinite alternate;
+      }
+      .boot-splash-panel {
+        position: relative;
+        display: flex;
+        width: 100%;
+        height: 100%;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        overflow: hidden;
+      }
+      .boot-splash-panel::before {
+        position: absolute;
+        inset: 0;
+        content: '';
+        pointer-events: none;
+        background: linear-gradient(118deg, transparent 18%, rgb(255 255 255 / 0.1) 38%, transparent 56%);
+        transform: translateX(-105%);
+        animation: boot-sheen 4.8s ease-in-out infinite;
+      }
+      .boot-splash-logo-wrap {
+        position: relative;
+        display: grid;
+        width: 5.75rem;
+        height: 5.75rem;
+        place-items: center;
+      }
+      .boot-splash-halo {
+        position: absolute;
+        inset: -0.75rem;
+        border-radius: 999px;
+        background: radial-gradient(circle, rgb(124 92 255 / 0.34), transparent 68%);
+        filter: blur(12px);
+        animation: boot-breathe 2.8s ease-in-out infinite;
+      }
+      .boot-splash-logo {
+        position: relative;
+        display: block;
+        width: 5.25rem;
+        height: 5.25rem;
+        object-fit: contain;
+        filter: drop-shadow(0 14px 18px rgb(0 0 0 / 0.22));
+      }
+      .boot-splash-version {
+        position: relative;
+        margin-top: 1.25rem;
+        font-family: var(--font-mono, ui-monospace, SFMono-Regular, Menlo, Consolas, monospace);
+        font-size: 12px;
+        letter-spacing: 0.04em;
+        color: rgb(255 255 255 / 0.45);
+      }
+      @media (prefers-color-scheme: light) {
+        body {
+          background: #f4f5f7;
+        }
+        .boot-splash {
+          background:
+            radial-gradient(circle at 50% 44%, hsl(210 20% 96% / 0.6), transparent 42%),
+            linear-gradient(145deg, #f7f8fa, #eef0f4);
+        }
+        .boot-splash-version {
+          color: rgb(0 0 0 / 0.45);
+        }
+        .boot-splash-logo {
+          filter: drop-shadow(0 14px 18px rgb(0 0 0 / 0.12));
+        }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        .boot-splash::before,
+        .boot-splash::after,
+        .boot-splash-panel::before,
+        .boot-splash-halo {
+          animation: none;
+        }
+      }
+      @keyframes boot-drift-a {
+        to {
+          transform: translate3d(18vmax, 16vmax, 0) scale(1.08);
+        }
+      }
+      @keyframes boot-drift-b {
+        to {
+          transform: translate3d(-20vmax, -14vmax, 0) scale(1.12);
+        }
+      }
+      @keyframes boot-sheen {
+        0%,
+        55% {
+          transform: translateX(-105%);
+        }
+        85%,
+        100% {
+          transform: translateX(105%);
+        }
+      }
+      @keyframes boot-breathe {
+        0%,
+        100% {
+          opacity: 0.55;
+          transform: scale(0.9);
+        }
+        50% {
+          opacity: 1;
+          transform: scale(1.08);
+        }
+      }
+    </style>
   </head>
   <body>
-    <div id="root"></div>
+    <div id="root">
+      <div class="boot-splash" role="status" aria-live="polite" aria-label="正在启动 OpenCodex">
+        <div class="boot-splash-panel">
+          <div class="boot-splash-logo-wrap">
+            <span class="boot-splash-halo" aria-hidden="true"></span>
+            <img class="boot-splash-logo" src="/opencode-icon.png" alt="" />
+          </div>
+          <div class="boot-splash-version">v__APP_VERSION__</div>
+        </div>
+      </div>
+    </div>
     <script type="module" src="/src/bootstrap.ts"></script>
   </body>
 </html>

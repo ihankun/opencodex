@@ -49,7 +49,17 @@ export default defineConfig({
       __APP_VERSION__: JSON.stringify(packageJson.version),
       __OPENCODE_VERSION__: JSON.stringify(opencodePackageJson.version),
     },
-    plugins: [react(), tailwindcss()],
+    plugins: [
+      react(),
+      tailwindcss(),
+      {
+        name: "custom-electron:startup-version",
+        transformIndexHtml(html: string) {
+          // The static boot splash lives in index.html, outside the JS define table.
+          return html.replaceAll("__APP_VERSION__", packageJson.version)
+        },
+      },
+    ],
     server: {
       port: 46237,
       strictPort: false,

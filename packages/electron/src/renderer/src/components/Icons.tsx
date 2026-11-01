@@ -14,6 +14,7 @@ import {
   Check,
   Send,
   Plus,
+  CirclePlus,
   GraduationCap,
   Settings,
   Sun,
@@ -132,6 +133,7 @@ export const ChevronUpIcon = wrap(ChevronUp)
 export const ChevronLeftIcon = wrap(ChevronLeft)
 export const ChevronRightIcon = wrap(ChevronRight)
 export const NewChatIcon = wrap(SquarePen)
+export const CirclePlusIcon = wrap(CirclePlus)
 export const HandIcon = wrap(Hand)
 export const KeyboardIcon = wrap(Keyboard)
 export const CheckIcon = wrap(Check)

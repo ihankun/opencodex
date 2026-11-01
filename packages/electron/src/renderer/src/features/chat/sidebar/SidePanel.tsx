@@ -20,7 +20,7 @@ import {
   PlusIcon,
   TrashIcon,
   ArchiveIcon,
-  NewChatIcon,
+  CirclePlusIcon,
   SearchIcon,
   PencilIcon,
   CheckIcon,
@@ -33,7 +33,6 @@ import {
 } from "../../../components/Icons"
 import {
   useDirectory,
-  useKeybindingLabel,
   useGitWorkspaceCatalog,
   useReorderableList,
   useSessions,
@@ -91,7 +90,7 @@ interface SidePanelProps {
 }
 
 function navigationItemClass(active: boolean) {
-  return `h-7 flex items-center rounded-lg active:scale-[0.98] transition-all duration-300 overflow-hidden ${
+  return `h-9 flex items-center rounded-xl active:scale-[0.98] transition-all duration-300 overflow-hidden ${
     active ? "sidebar-selected-row sidebar-primary-text" : "sidebar-hover-row sidebar-primary-text"
   }`
 }
@@ -440,7 +439,6 @@ export function SidePanel({
   }, [])
 
   const showLabels = isExpanded || isMobile
-  const newChatShortcut = useKeybindingLabel("newSession")
 
   // Active sessions
   const busySessions = useBusySessions()
@@ -1482,7 +1480,7 @@ export function SidePanel({
     onLoadMore: localConversationSource.onLoadMore,
   }
   const projectsHeading = (
-    <div className="sidebar-muted-text mb-0.5 flex items-center px-[6px] text-[length:var(--fs-sm)]">
+    <div className="sidebar-muted-text mb-1 mt-3 flex items-center px-2 text-[length:var(--fs-xs)] font-medium tracking-wide">
       <span>{t("sidebar.projects")}</span>
       {projectBusyCount > 0 && (
         <span
@@ -1523,7 +1521,7 @@ export function SidePanel({
           )}
         </div>
       ) : (
-        <div className="shrink-0" style={{ height: 12 }} />
+        <div className="shrink-0" style={{ height: 8 }} />
       )}
 
       {/* ===== Navigation - 图标位置固定 ===== */}
@@ -1533,28 +1531,22 @@ export function SidePanel({
           type="button"
           onClick={onNewSession}
           aria-label={t("sidebar.newChat")}
-          className={`${navigationItemClass(false)} group`}
-          style={{
-            width: showLabels ? "100%" : 32,
-            paddingLeft: 6,
-            paddingRight: 6,
-          }}
+          className={
+            showLabels
+              ? "group mb-1 flex h-10 w-full items-center justify-center gap-2 rounded-xl glass-alt border border-border-200/60 px-2 text-[length:var(--fs-base)] font-medium text-text-100 shadow-sm transition-[filter] hover:brightness-110 active:scale-[0.99]"
+              : `${navigationItemClass(false)} group`
+          }
+          style={showLabels ? undefined : { width: 32, paddingLeft: 10, paddingRight: 10 }}
           title={t("sidebar.newChat")}
         >
           <span className="size-5 flex items-center justify-center shrink-0">
-            <NewChatIcon size={14} />
+            <CirclePlusIcon size={16} />
           </span>
           <span
-            className="ml-2 text-[length:var(--fs-base)] whitespace-nowrap transition-opacity duration-300"
+            className="whitespace-nowrap transition-opacity duration-300"
             style={{ opacity: showLabels ? 1 : 0 }}
           >
             {t("sidebar.newChat")}
-          </span>
-          <span
-            className="ml-auto text-[length:var(--fs-xxs)] text-text-500 opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap"
-            style={{ opacity: showLabels ? undefined : 0 }}
-          >
-            {newChatShortcut}
           </span>
         </button>
 
@@ -1565,8 +1557,8 @@ export function SidePanel({
           className={navigationItemClass(activeNavigation === "plugins")}
           style={{
             width: showLabels ? "100%" : 32,
-            paddingLeft: 6,
-            paddingRight: 6,
+            paddingLeft: 10,
+            paddingRight: 10,
           }}
           title={t("sidebar.plugins")}
         >
@@ -1586,7 +1578,7 @@ export function SidePanel({
           onClick={onOpenTasks}
           aria-label={t("sidebar.tasks")}
           className={navigationItemClass(activeNavigation === "tasks")}
-          style={{ width: showLabels ? "100%" : 32, paddingLeft: 6, paddingRight: 6 }}
+          style={{ width: showLabels ? "100%" : 32, paddingLeft: 10, paddingRight: 10 }}
           title={t("sidebar.tasks")}
         >
           <span className="size-5 flex items-center justify-center shrink-0">
@@ -1615,7 +1607,7 @@ export function SidePanel({
               onClick={onExpandSidebar}
               aria-label={t("sidebar.projects")}
               className={navigationItemClass(false)}
-              style={{ width: 32, paddingLeft: 6, paddingRight: 6 }}
+              style={{ width: 32, paddingLeft: 10, paddingRight: 10 }}
               title={t("sidebar.projects")}
             >
               <span className="size-5 flex items-center justify-center shrink-0">
@@ -1627,7 +1619,7 @@ export function SidePanel({
               onClick={onOpenSearch}
               aria-label={t("sidebar.search")}
               className={navigationItemClass(false)}
-              style={{ width: 32, paddingLeft: 6, paddingRight: 6 }}
+              style={{ width: 32, paddingLeft: 10, paddingRight: 10 }}
               title={t("sidebar.search")}
             >
               <span className="size-5 flex items-center justify-center shrink-0">
@@ -1660,7 +1652,7 @@ export function SidePanel({
         {showLabels && (
           <section className="mx-2 mt-2">
             {pinnedProjectOrder.length > 0 ? (
-              <div className="sidebar-muted-text mb-0.5 flex items-center px-[6px] text-[length:var(--fs-sm)]">
+              <div className="sidebar-muted-text mb-1 mt-3 flex items-center px-2 text-[length:var(--fs-xs)] font-medium tracking-wide">
                 <span>{t("sidebar.pinnedProjects")}</span>
                 {pinnedProjectBusyCount > 0 && (
                   <span
@@ -1750,7 +1742,7 @@ export function SidePanel({
                             ? (event) => handleProjectTouchStart(project.id, event)
                             : undefined
                         }
-                        className={`group w-full flex items-center gap-2 rounded-md px-1.5 py-1 transition-all ${
+                        className={`group w-full flex items-center gap-2 rounded-lg px-2 py-1.5 transition-all ${
                           draggedProjectId === project.id
                             ? "relative z-10 bg-bg-100 shadow-lg ring-1 ring-inset ring-accent-main-100/30"
                             : ""

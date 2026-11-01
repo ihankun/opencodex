@@ -1505,25 +1505,16 @@ html[data-theme-switch-mask='leaving']::after {
 .startup-glass-panel {
   position: relative;
   display: flex;
-  width: min(19rem, calc(100vw - 3rem));
-  min-height: 15.5rem;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   overflow: hidden;
-  border: 1px solid hsl(var(--border-200) / 0.68);
-  border-radius: 2rem;
-  background:
-    linear-gradient(145deg, hsl(var(--bg-000) / 0.68), hsl(var(--bg-100) / 0.38)),
-    linear-gradient(115deg, hsl(0 0% 100% / 0.14), transparent 42%);
-  box-shadow:
-    inset 0 1px 0 hsl(0 0% 100% / 0.22),
-    inset 0 -1px 0 hsl(var(--border-200) / 0.18),
-    0 28px 70px hsl(0 0% 0% / 0.18);
-  -webkit-backdrop-filter: blur(34px) saturate(175%);
-  backdrop-filter: blur(34px) saturate(175%);
 }
 
+/* A glass-like diagonal light sweep across the full startup surface. */
 .startup-glass-panel::before {
   position: absolute;
   inset: 0;
@@ -1560,32 +1551,13 @@ html[data-theme-switch-mask='leaving']::after {
   filter: drop-shadow(0 14px 18px hsl(0 0% 0% / 0.22));
 }
 
-.startup-title {
+.startup-version {
   position: relative;
-  margin-top: 1.35rem;
-  font-size: var(--fs-base);
-  font-weight: 500;
-  letter-spacing: 0.01em;
-  color: hsl(var(--text-200));
-}
-
-.startup-progress {
-  position: relative;
-  width: 6.5rem;
-  height: 2px;
-  margin-top: 1.15rem;
-  overflow: hidden;
-  border-radius: 999px;
-  background: hsl(var(--border-200) / 0.46);
-}
-
-.startup-progress span {
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  background: linear-gradient(90deg, transparent, hsl(var(--accent-main-100)), transparent);
-  transform: translateX(-100%);
-  animation: startup-progress-scan 1.8s ease-in-out infinite;
+  margin-top: 1.25rem;
+  font-family: var(--font-mono);
+  font-size: var(--fs-xs);
+  letter-spacing: 0.04em;
+  color: hsl(var(--text-500));
 }
 
 @keyframes startup-light-drift-a {
@@ -1629,28 +1601,13 @@ html[data-theme-switch-mask='leaving']::after {
   }
 }
 
-@keyframes startup-progress-scan {
-  0% {
-    transform: translateX(-100%);
-  }
-  65%,
-  100% {
-    transform: translateX(100%);
-  }
-}
-
 @media (prefers-reduced-motion: reduce) {
   .startup-screen::before,
   .startup-screen::after,
   .startup-ambient-light,
   .startup-glass-panel::before,
-  .startup-logo-halo,
-  .startup-progress span {
+  .startup-logo-halo {
     animation: none;
-  }
-
-  .startup-progress span {
-    transform: translateX(0);
   }
 }
 

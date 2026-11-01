@@ -354,7 +354,6 @@ export const Sidebar = memo(function Sidebar({
         style={{ width: `${previewMode ? layout.sidebar.openWidth : layout.sidebar.dockedWidth}px` }}
         className={`
           sidebar-surface relative flex flex-col h-full overflow-hidden shrink-0 min-w-0
-          border-r border-border-200/50
           ${previewMode ? 'shadow-xl shadow-black/10' : ''}
           ${isResizing ? 'transition-none' : 'transition-[width] duration-300 ease-out'}
         `}
