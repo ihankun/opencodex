@@ -1516,10 +1516,7 @@ function App() {
                 </div>
               )}
 
-              <div
-                className="chat-surface flex-1 flex min-w-0 h-full p-1"
-                style={{ backgroundColor: 'hsl(var(--sidebar-bg))' }}
-              >
+              <div className="chat-surface flex-1 flex min-w-0 h-full p-1">
                 <div
                   ref={surfaceRef}
                   className="chat-surface-card flex-1 flex flex-col min-w-0 overflow-hidden rounded-xl border border-border-200/40 bg-[hsl(var(--chat-bg))]"

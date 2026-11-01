@@ -993,9 +993,13 @@ html[data-platform='macos'] [data-chat-header='true'] .rounded-lg > input {
   }
 }
 
-.app-shell,
-.chat-surface {
+.app-shell {
   background-color: hsl(var(--chat-bg));
+}
+
+/* Frame around the rounded chat panel; matches the sidebar surface. */
+.chat-surface {
+  background-color: hsl(var(--sidebar-bg));
 }
 
 .desktop-titlebar-surface {
@@ -1006,8 +1010,26 @@ html.electron-app[data-theme-preset='codex'][data-glass] .app-shell {
   background-color: transparent;
 }
 
-html.electron-app[data-theme-preset='codex'][data-glass] .chat-surface {
-  background-color: hsl(var(--chat-bg));
+/* macOS glass: the frame around the rounded panel uses the same tint as the sidebar,
+ * so the panel reads as an inset card instead of blending into a near-white gutter. */
+:root[data-theme-preset='codex'][data-platform='macos'][data-mode='light'][data-glass] .chat-surface {
+  background-color: hsl(var(--sidebar-bg) / 0.32);
+}
+
+@media (prefers-color-scheme: light) {
+  :root[data-theme-preset='codex'][data-platform='macos'][data-glass]:not([data-mode]) .chat-surface {
+    background-color: hsl(var(--sidebar-bg) / 0.32);
+  }
+}
+
+:root[data-theme-preset='codex'][data-platform='macos'][data-mode='dark'][data-glass] .chat-surface {
+  background-color: hsl(0 0% 8% / 0.32);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root[data-theme-preset='codex'][data-platform='macos'][data-glass]:not([data-mode]) .chat-surface {
+    background-color: hsl(0 0% 8% / 0.32);
+  }
 }
 
 html.electron-app[data-theme-preset='codex'][data-glass] .desktop-titlebar-surface {
