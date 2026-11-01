@@ -150,9 +150,9 @@ function createEnv(secureEnvironment: Record<string, string>, userDataPath: stri
     // The official desktop and this repository's WSL sidecar both identify as "desktop"; the
     // kernel version comes from the binary, so the full identity matches a desktop build.
     OPENCODE_CLIENT: "desktop",
-    // Keep the fork's existing database name; the channel change would otherwise open a fresh
-    // opencode-local.db and hide every session recorded before it.
-    OPENCODE_DB: "opencode-opencodex.db",
+    // v1 stored sessions in `opencodex.db`; pin that name so the server opens the existing
+    // database and the V1 migration can import them instead of starting from an empty one.
+    OPENCODE_DB: "opencodex.db",
     OPENCODE_DISABLE_EMBEDDED_WEB_UI: "true",
     OPENCODE_EXPERIMENTAL_FILEWATCHER: "true",
     XDG_CACHE_HOME: join(userDataPath, "cache"),
