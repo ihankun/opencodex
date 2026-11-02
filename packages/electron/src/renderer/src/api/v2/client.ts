@@ -231,6 +231,43 @@ async function buildPromptInput(input: Json) {
   }
 
 
+  function toV2McpConfig(config: McpServerConfig): Json {
+    const timeout =
+      typeof config.timeout === "number"
+        ? { startup: config.timeout, catalog: config.timeout, execution: config.timeout }
+        : undefined
+    const shared = {
+      disabled: config.enabled === undefined ? undefined : !config.enabled,
+      timeout,
+    }
+    if (config.type === "local")
+      return {
+        ...shared,
+        type: "local",
+        command: config.command,
+        cwd: config.cwd,
+        environment: config.environment,
+      }
+    return {
+      ...shared,
+      type: "remote",
+      url: config.url,
+      headers: config.headers,
+      oauth:
+        config.oauth === false
+          ? false
+          : config.oauth
+            ? {
+                client_id: config.oauth.clientId,
+                client_secret: config.oauth.clientSecret,
+                scope: config.oauth.scope,
+                callback_port: config.oauth.callbackPort,
+                redirect_uri: config.oauth.redirectUri,
+              }
+            : undefined,
+    }
+  }
+
   async function resolveAgentID(agent: string | undefined, directory?: string): Promise<string | undefined> {
     if (!agent) return undefined
     const agents = await v2.agent.list(toLocation(directory))
@@ -255,7 +292,12 @@ async function buildPromptInput(input: Json) {
         model: {
           id: model.modelID,
           providerID: model.providerID,
-          variant: typeof model.variant === "string" ? model.variant : undefined,
+          variant:
+            typeof input.variant === "string"
+              ? input.variant
+              : typeof model.variant === "string"
+                ? model.variant
+                : undefined,
         },
       })
     }
@@ -413,6 +455,7 @@ async function buildPromptInput(input: Json) {
         await v2.session.update({
           sessionID,
           title: input.title as string | undefined,
+          metadata: input.metadata as never,
           permissions: toV2Permissions(input.permission) as never,
           archived,
         })
@@ -466,7 +509,7 @@ async function buildPromptInput(input: Json) {
       diff: async (input: Json) => {
         const result = await v2.session.diff({
           sessionID: input.sessionID as string,
-          to: input.messageID as string | undefined,
+          from: input.messageID as string | undefined,
         })
         return { data: result as unknown as SnapshotFileDiff[] }
       },
@@ -538,10 +581,7 @@ async function buildPromptInput(input: Json) {
           sessionID,
           name: String(input.command ?? input.name ?? ""),
           text: String(input.arguments ?? input.text ?? ""),
-          files: payload.files.map((file) => ({
-            uri: file.name ?? "",
-            name: file.name,
-          })),
+          files: payload.files,
           agents: payload.agents,
           delivery: input.delivery === "steer" || input.delivery === "queue" ? input.delivery : undefined,
         })
@@ -593,14 +633,21 @@ async function buildPromptInput(input: Json) {
       },
       providers: async (input: Json = {}) => {
         const location = toLocation(input.directory as string | undefined)
-        const [providers, models, defaultModel] = await Promise.all([
+        const [providers, models, defaultModel, integrations] = await Promise.all([
           v2.provider.list(location),
           v2.model.list(location),
           v2.model.default(location),
+          v2.integration.list(location),
         ])
         const all = providers.data.map((provider: ProviderInfo) => projectProvider(provider, models.data))
+        const integrationByID = new Map(integrations.data.map((integration) => [integration.id, integration]))
         const connected = providers.data
-          .filter((provider) => provider.integrationID)
+          .filter((provider) => {
+            const integration = provider.integrationID
+              ? integrationByID.get(provider.integrationID)
+              : undefined
+            return (integration?.connections.length ?? 0) > 0
+          })
           .map((provider) => provider.id)
         const defaultEntry = defaultModel.data
           ? { [defaultModel.data.providerID]: defaultModel.data.modelID }
@@ -749,7 +796,11 @@ async function buildPromptInput(input: Json) {
         const provider = await v2.provider.get({ providerID })
         const integrationID = provider.data.integrationID ?? providerID
         if (auth.type === "api") {
-          await v2.integration.connect.key({ integrationID, key: auth.key })
+          await v2.integration.connect.key({
+            integrationID,
+            key: auth.key,
+            answer: auth.metadata as never,
+          })
         } else if (auth.type === "wellknown") {
           await v2.integration.connect.key({ integrationID, key: auth.key })
         } else {
@@ -761,6 +812,14 @@ async function buildPromptInput(input: Json) {
               refresh: auth.refresh,
               access: auth.access,
               expires: auth.expires,
+              ...(auth.accountId || auth.enterpriseUrl
+                ? {
+                    metadata: {
+                      ...(auth.accountId ? { accountId: auth.accountId } : {}),
+                      ...(auth.enterpriseUrl ? { enterpriseUrl: auth.enterpriseUrl } : {}),
+                    },
+                  }
+                : {}),
             },
           })
         }
@@ -791,7 +850,7 @@ async function buildPromptInput(input: Json) {
           ...toLocation(input.directory as string | undefined),
         })
         try {
-          return { data: { type: "text", content: new TextDecoder().decode(bytes) } satisfies FileContent }
+          return { data: { type: "text", content: new TextDecoder("utf-8", { fatal: true }).decode(bytes) } satisfies FileContent }
         } catch {
           return { data: { type: "binary", content: bytesToBase64(bytes), encoding: "base64" } satisfies FileContent }
         }
@@ -828,10 +887,7 @@ async function buildPromptInput(input: Json) {
         const config = input.config as McpServerConfig
         await v2.mcp.add({
           server: input.name as string,
-          config: {
-            ...(config as unknown as Json),
-            type: config.type,
-          } as never,
+          config: toV2McpConfig(config) as never,
           ...toLocation(input.directory as string | undefined),
         })
         return { data: true }
@@ -1024,8 +1080,18 @@ async function buildPromptInput(input: Json) {
         },
       },
       diff: async (input: Json) => {
+        // Legacy scopes name the comparison by its source; V2 names the two endpoints it compares.
+        const mode =
+          input.mode === "git"
+            ? "working"
+            : input.mode === "branch"
+              ? "branch"
+              : input.mode === "upstream"
+                ? "committed"
+                : undefined
+        if (!mode) throw new Error(`Unsupported VCS diff mode: ${String(input.mode)}`)
         const result = await v2.vcs.diff({
-          mode: input.mode as "working" | "branch" | "committed",
+          mode,
           ...toLocation(input.directory as string | undefined),
         })
         return { data: result.data as unknown as SnapshotFileDiff[] }

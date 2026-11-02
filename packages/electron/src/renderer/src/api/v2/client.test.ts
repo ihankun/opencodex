@@ -4,14 +4,18 @@ import { makeLegacyClient } from './client'
 
 const sessions = Array.from({ length: 260 }, (_, index) => makeSession(index))
 const messages = Array.from({ length: 150 }, (_, index) => makeMessage(index))
+const requests: Array<{ method: string; url: string; body: string }> = []
 let server: ReturnType<typeof Bun.serve>
 let legacy: ReturnType<typeof makeLegacyClient>
 
 beforeAll(() => {
   server = Bun.serve({
     port: 0,
-    fetch(request) {
+    async fetch(request) {
       const url = new URL(request.url)
+      const body =
+        request.method === 'GET' || request.method === 'HEAD' ? '' : await request.clone().text()
+      requests.push({ method: request.method, url: `${url.pathname}${url.search}`, body })
       if (url.pathname === '/api/session') {
         const limit = Number(url.searchParams.get('limit') ?? '50')
         const offset = Number(url.searchParams.get('cursor') ?? '0')
@@ -32,6 +36,45 @@ beforeAll(() => {
         return Response.json({
           data: page,
           cursor: next < newestFirst.length ? { next: String(next) } : {},
+        })
+      }
+      if (url.pathname === '/api/session/ses_1') {
+        if (request.method === 'PATCH') return new Response(null, { status: 204 })
+        return Response.json({ data: makeSession(1) })
+      }
+      if (url.pathname === '/api/session/ses_1/diff') {
+        return Response.json({ data: [] })
+      }
+      if (url.pathname === '/api/session/ses_1/command') {
+        return new Response(null, { status: 204 })
+      }
+      if (url.pathname === '/api/provider/test') {
+        return Response.json({
+          location: { directory: '/tmp/opencodex-test' },
+          data: { id: 'test', name: 'Test', activation: 'auto', package: 'test' },
+        })
+      }
+      if (url.pathname === '/api/experimental/mcp/test') {
+        return new Response(null, { status: 204 })
+      }
+      if (url.pathname === '/api/integration/test/connect/key') {
+        return new Response(null, { status: 204 })
+      }
+      if (url.pathname === '/api/fs/read/bin') {
+        return new Response(new Uint8Array([0xff]))
+      }
+      if (url.pathname === '/api/vcs/diff') {
+        return Response.json({
+          location: { directory: '/tmp/opencodex-test' },
+          data: [
+            {
+              file: url.searchParams.get('mode') ?? '',
+              patch: '',
+              additions: 0,
+              deletions: 0,
+              status: 'modified',
+            },
+          ],
         })
       }
       return new Response('not found', { status: 404 })
@@ -78,6 +121,86 @@ describe('legacy client pagination', () => {
     expect(result.data.map((message) => message.info.id)).toEqual(
       Array.from({ length: 40 }, (_, index) => `msg_${110 + index}`),
     )
+  })
+})
+
+describe('legacy client argument mapping', () => {
+  test('maps the legacy session diff message to the V2 from query', async () => {
+    await legacy.session.diff({ sessionID: 'ses_1', messageID: 'msg_1' })
+    expect(requests.findLast(request => request.url.startsWith('/api/session/ses_1/diff'))?.url).toContain(
+      'from=msg_1',
+    )
+  })
+
+  test('forwards session metadata and unarchive state', async () => {
+    await legacy.session.update({
+      sessionID: 'ses_1',
+      title: 'Renamed',
+      metadata: { source: 'test' },
+      unarchive: true,
+    })
+    const request = requests.findLast(item => item.method === 'PATCH' && item.url.startsWith('/api/session/ses_1'))
+    expect(JSON.parse(request?.body ?? '{}')).toMatchObject({
+      title: 'Renamed',
+      metadata: { source: 'test' },
+      archived: false,
+    })
+  })
+
+  test('keeps command attachments in the V2 prompt file shape', async () => {
+    await legacy.session.command({
+      sessionID: 'ses_1',
+      command: 'test',
+      arguments: 'hello',
+      parts: [{ type: 'file', url: 'file:///tmp/a.txt', mime: 'text/plain', filename: 'a.txt' }],
+    })
+    const request = requests.findLast(item => item.url.startsWith('/api/session/ses_1/command'))
+    expect(JSON.parse(request?.body ?? '{}')).toMatchObject({
+      name: 'test',
+      text: 'hello',
+      files: [{ uri: 'file:///tmp/a.txt', name: 'a.txt' }],
+    })
+  })
+
+  test('converts legacy MCP enable and timeout fields', async () => {
+    await legacy.mcp.add({
+      name: 'test',
+      config: { type: 'local', command: ['node'], enabled: false, timeout: 5000 },
+    })
+    const request = requests.findLast(item => item.url.startsWith('/api/experimental/mcp/test'))
+    expect(JSON.parse(request?.body ?? '{}')).toMatchObject({
+      config: {
+        type: 'local',
+        command: ['node'],
+        disabled: true,
+        timeout: { startup: 5000, catalog: 5000, execution: 5000 },
+      },
+    })
+  })
+
+  test('forwards provider key metadata as an integration answer', async () => {
+    await legacy.auth.set({
+      providerID: 'test',
+      auth: { type: 'api', key: 'secret', metadata: { account: 'a' } },
+    })
+    const request = requests.findLast(item => item.url.startsWith('/api/integration/test/connect/key'))
+    expect(JSON.parse(request?.body ?? '{}')).toMatchObject({
+      key: 'secret',
+      answer: { account: 'a' },
+    })
+  })
+
+  test('treats invalid UTF-8 as binary content', async () => {
+    const result = await legacy.file.read({ path: 'bin' })
+    expect(result.data).toMatchObject({ type: 'binary' })
+  })
+})
+
+describe('legacy client VCS diff modes', () => {
+  test('maps legacy scopes to V2 comparisons', async () => {
+    expect((await legacy.vcs.diff({ mode: 'git' })).data[0]?.file).toBe('working')
+    expect((await legacy.vcs.diff({ mode: 'branch' })).data[0]?.file).toBe('branch')
+    expect((await legacy.vcs.diff({ mode: 'upstream' })).data[0]?.file).toBe('committed')
   })
 })
 

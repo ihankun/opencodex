@@ -93,12 +93,17 @@ function ConfigEditorDialog({ isOpen, onClose }: { isOpen: boolean; onClose: () 
         getProviderConfigs(directory).catch(() => undefined),
       ])
       const modelChoices: Choice[] = []
-      if (isRecord(providers)) {
-        for (const [providerID, provider] of Object.entries(providers)) {
-          if (!isRecord(provider) || !isRecord(provider.models)) continue
-          for (const modelID of Object.keys(provider.models)) {
-            modelChoices.push({ value: `${providerID}/${modelID}`, label: `${providerID}/${modelID}` })
-          }
+      const providerCatalog = isRecord(providers) && Array.isArray(providers.providers)
+        ? Object.fromEntries(
+            providers.providers
+              .filter(isRecord)
+              .flatMap(provider => (typeof provider.id === 'string' ? [[provider.id, provider]] : [])),
+          )
+        : {}
+      for (const [providerID, provider] of Object.entries(providerCatalog)) {
+        if (!isRecord(provider) || !isRecord(provider.models)) continue
+        for (const modelID of Object.keys(provider.models)) {
+          modelChoices.push({ value: `${providerID}/${modelID}`, label: `${providerID}/${modelID}` })
         }
       }
       if (request !== loadRequestRef.current) return
@@ -108,7 +113,7 @@ function ConfigEditorDialog({ isOpen, onClose }: { isOpen: boolean; onClose: () 
       setConfig(clone(editable))
       setJsonDraftErrors(new Set())
       setEffective(nextEffective)
-      setProviderCatalog(isRecord(providers) ? providers : {})
+      setProviderCatalog(providerCatalog)
       setShells([
         { value: '', label: t('config.shellAuto') },
         ...shellList.map(shell => ({

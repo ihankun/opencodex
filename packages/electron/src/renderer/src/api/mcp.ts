@@ -27,29 +27,47 @@ export async function addMcpServer(name: string, config: McpServerConfig, direct
 
 export async function removeMcpServer(name: string, directory?: string): Promise<void> {
   const config = await getConfig(directory)
-  const next = { ...mcpConfig(config) }
-  delete next[name]
-  await updateConfig({ ...(config as unknown as Record<string, unknown>), mcp: next } as unknown as Config, directory)
+  const mcp = mcpServerMap(config)
+  delete mcp.servers[name]
+  await updateConfig(withMcpServers(config, mcp), directory)
 }
 
 async function persistMcpServer(name: string, server: McpServerConfig, directory?: string) {
   const config = await getConfig(directory)
-  await updateConfig(
-    {
-      ...(config as unknown as Record<string, unknown>),
-      mcp: {
-        ...mcpConfig(config),
-        [name]: server,
-      },
-    } as unknown as Config,
-    directory,
-  )
+  const mcp = mcpServerMap(config)
+  mcp.servers[name] = server
+  await updateConfig(withMcpServers(config, mcp), directory)
 }
 
 function mcpConfig(config: Config): Record<string, unknown> {
   const value = (config as unknown as { mcp?: unknown }).mcp
-  if (!value || typeof value !== 'object' || Array.isArray(value)) return {}
-  return value as Record<string, unknown>
+  if (!isRecord(value)) return {}
+  return value
+}
+
+// V2 nests servers under mcp.servers; V1 kept them directly under mcp with an optional timeout.
+function mcpServerMap(config: Config) {
+  const mcp = mcpConfig(config)
+  if (isRecord(mcp.servers)) return { timeout: mcp.timeout, servers: { ...mcp.servers } }
+  const { timeout, ...servers } = mcp
+  return { timeout, servers }
+}
+
+function withMcpServers(
+  config: Config,
+  mcp: { timeout: unknown; servers: Record<string, unknown> },
+): Config {
+  return {
+    ...(config as unknown as Record<string, unknown>),
+    mcp: {
+      ...(mcp.timeout !== undefined ? { timeout: mcp.timeout } : {}),
+      servers: mcp.servers,
+    },
+  } as unknown as Config
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return !!value && typeof value === 'object' && !Array.isArray(value)
 }
 
 /**
