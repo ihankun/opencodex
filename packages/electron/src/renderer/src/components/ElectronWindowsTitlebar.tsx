@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import { ChevronLeftIcon, ChevronRightIcon, SearchIcon, SidebarIcon, BellIcon, CirclePlusIcon } from './Icons'
+import { ElectronUpdateToggle } from './ElectronUpdateToggle'
 import { DESKTOP_TITLEBAR_HEIGHT, DESKTOP_TITLEBAR_Z_INDEX } from '../constants/desktopWindow'
 import { useTranslation } from 'react-i18next'
 import { canGoBack, canGoForward, subscribe } from '../store/navigationHistoryStore'
@@ -165,6 +166,7 @@ export function ElectronWindowsTitlebar({
             <ChevronRightIcon size={18} />
           </button>
         </div>
+        <ElectronUpdateToggle variant="titlebar" />
       </div>
 
       <div className="flex-1" />
