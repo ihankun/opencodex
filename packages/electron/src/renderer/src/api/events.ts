@@ -76,6 +76,7 @@ const allSubscribers = new Set<EventCallbacks>()
 
 // 单例连接状态
 let singletonController: AbortController | null = null
+let singletonReader: ReadableStreamDefaultReader<Uint8Array> | null = null
 let heartbeatTimer: ReturnType<typeof setTimeout> | null = null
 let reconnectTimer: ReturnType<typeof setTimeout> | null = null
 let keepaliveTimer: ReturnType<typeof setInterval> | null = null
@@ -97,6 +98,23 @@ function finalizeConnectionAttempt(generation: number): boolean {
   }
   isConnecting = false
   return true
+}
+
+/**
+ * Close the current stream before opening another one. Aborting the fetch alone can leave the
+ * response body's network connection open in Chromium, so cancel the reader explicitly.
+ */
+function resetSingletonConnection() {
+  connectionGeneration++
+  if (singletonReader) {
+    void singletonReader.cancel().catch(() => {})
+    singletonReader = null
+  }
+  if (singletonController) {
+    singletonController.abort()
+    singletonController = null
+  }
+  isConnecting = false
 }
 
 /**
@@ -126,6 +144,7 @@ function resetHeartbeat() {
 
   heartbeatTimer = setTimeout(() => {
     console.warn(`[SSE] No events received for ${timeout / 1000}s, reconnecting...`)
+    resetSingletonConnection()
     updateConnectionState({ state: "disconnected", error: "Heartbeat timeout" })
     scheduleReconnect()
   }, timeout)
@@ -165,16 +184,15 @@ function connectSingleton() {
           `[SSE] connectSingleton: state=connected but stale (${Math.round(timeSinceLastEvent / 1000)}s), forcing disconnect`,
         )
       }
-      connectionGeneration++
-      if (singletonController) {
-        singletonController.abort()
-        singletonController = null
-      }
       updateConnectionState({ state: "disconnected" })
     } else {
       return // 连接确实还活着
     }
   }
+
+  // Any previous stream must be closed before opening another one. A stale reader can outlive an
+  // error or heartbeat timeout and would otherwise occupy a browser connection slot.
+  resetSingletonConnection()
 
   isConnecting = true
 
@@ -238,39 +256,47 @@ function connectViaBrowser() {
       if (!reader) {
         throw new Error("No response body")
       }
+      singletonReader = reader
 
       const decoder = new TextDecoder()
       const sseParser = createSseTextParser()
 
-      while (true) {
-        // 代次不匹配，说明已经 reconnect 过了，停止读取旧流
-        if (myGeneration !== connectionGeneration) {
-          reader.cancel().catch(() => {})
-          break
-        }
-
-        const { done, value } = await reader.read()
-        if (myGeneration !== connectionGeneration) {
-          reader.cancel().catch(() => {})
-          break
-        }
-
-        if (done) {
-          if (import.meta.env.DEV) {
-            console.warn("[SSE] Stream ended, reconnecting...")
+      try {
+        while (true) {
+          // 代次不匹配，说明已经 reconnect 过了，停止读取旧流
+          if (myGeneration !== connectionGeneration) {
+            reader.cancel().catch(() => {})
+            break
           }
-          updateConnectionState({ state: "disconnected" })
-          scheduleReconnect()
-          break
-        }
 
-        resetHeartbeat()
+          const { done, value } = await reader.read()
+          if (myGeneration !== connectionGeneration) {
+            reader.cancel().catch(() => {})
+            break
+          }
 
-        for (const eventData of sseParser.push(decoder.decode(value, { stream: true }))) {
-          for (const globalEvent of parseServerEvents(eventData)) {
-            broadcastEvent(globalEvent)
+          if (done) {
+            if (import.meta.env.DEV) {
+              console.warn("[SSE] Stream ended, reconnecting...")
+            }
+            updateConnectionState({ state: "disconnected" })
+            scheduleReconnect()
+            break
+          }
+
+          resetHeartbeat()
+
+          for (const eventData of sseParser.push(decoder.decode(value, { stream: true }))) {
+            for (const globalEvent of parseServerEvents(eventData)) {
+              broadcastEvent(globalEvent)
+            }
           }
         }
+      } finally {
+        if (singletonReader === reader) singletonReader = null
+        // A reconnect can abort the fetch while read() is pending; cancel the body explicitly so
+        // Chromium releases the HTTP connection instead of leaving it open.
+        await reader.cancel().catch(() => {})
       }
     })
     .catch((error) => {
@@ -349,12 +375,7 @@ function startBackgroundKeepalive() {
       console.warn("[SSE] Background keepalive: connection appears dead, forcing reconnect")
 
       // 断开旧连接
-      if (singletonController) {
-        singletonController.abort()
-        singletonController = null
-      }
-      isConnecting = false
-      connectionGeneration++
+      resetSingletonConnection()
 
       updateConnectionState({ state: "disconnected", error: "Background keepalive timeout" })
       scheduleReconnect()
@@ -381,12 +402,8 @@ function disconnectSingleton() {
   if (reconnectTimer) clearTimeout(reconnectTimer)
   stopBackgroundKeepalive()
 
-  if (singletonController) {
-    singletonController.abort()
-    singletonController = null
-  }
+  resetSingletonConnection()
 
-  isConnecting = false
   updateConnectionState({ state: "disconnected" })
 }
 
@@ -457,12 +474,7 @@ function forceReconnectNow() {
   updateConnectionState({ reconnectAttempt: 0 })
 
   // 断开旧连接
-  connectionGeneration++
-  if (singletonController) {
-    singletonController.abort()
-    singletonController = null
-  }
-  isConnecting = false
+  resetSingletonConnection()
 
   connectSingleton()
 }
@@ -482,12 +494,7 @@ function handleOffline() {
   }
   // 标记为断连，但不尝试重连（没网重连也没用）
   if (connectionInfo.state === "connected" || connectionInfo.state === "connecting") {
-    connectionGeneration++
-    if (singletonController) {
-      singletonController.abort()
-      singletonController = null
-    }
-    isConnecting = false
+    resetSingletonConnection()
     if (heartbeatTimer) clearTimeout(heartbeatTimer)
     if (reconnectTimer) clearTimeout(reconnectTimer)
     stopBackgroundKeepalive()
@@ -666,14 +673,8 @@ export function reconnectSSE() {
   // 标记为服务器切换，重连成功时 onReconnected 会携带 'server-switch' reason
   isServerSwitch = true
 
-  // 递增连接代次，使旧连接的事件回调自动失效
-  connectionGeneration++
-
-  if (singletonController) {
-    singletonController.abort()
-    singletonController = null
-  }
-  isConnecting = false
+  // 关闭旧流并递增连接代次，使旧连接的事件回调自动失效
+  resetSingletonConnection()
 
   // 重置重连计数
   updateConnectionState({
