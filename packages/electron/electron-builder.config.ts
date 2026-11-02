@@ -1,8 +1,15 @@
 import type { Configuration } from "electron-builder"
+import { existsSync } from "node:fs"
+import { resolve } from "node:path"
+
+// Reuse the Electron distribution installed for development instead of downloading and extracting
+// the same zip on every package run. electron-builder falls back to its download cache when absent.
+const electronDist = resolve("node_modules/electron/dist")
 
 const config: Configuration = {
   appId: "com.hankun.opencodex",
   productName: "OpenCodex",
+  ...(existsSync(electronDist) ? { electronDist } : {}),
   directories: {
     output: "release",
   },
