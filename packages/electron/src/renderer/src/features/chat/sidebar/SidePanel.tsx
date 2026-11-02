@@ -1533,19 +1533,15 @@ export function SidePanel({
           type="button"
           onClick={onNewSession}
           aria-label={t("sidebar.newChat")}
-          className={
-            showLabels
-              ? "group mb-1 flex h-10 w-full items-center justify-center gap-2 rounded-xl glass-alt border border-border-200/60 px-2 text-[length:var(--fs-base)] font-medium text-text-100 shadow-sm transition-[filter] hover:brightness-110 active:scale-[0.99]"
-              : `${navigationItemClass(false)} group`
-          }
-          style={showLabels ? undefined : { width: 32, paddingLeft: 10, paddingRight: 10 }}
+          className={navigationItemClass(activeNavigation === "new")}
+          style={{ width: showLabels ? "100%" : 32, paddingLeft: 10, paddingRight: 10 }}
           title={t("sidebar.newChat")}
         >
           <span className="size-5 flex items-center justify-center shrink-0">
             <CirclePlusIcon size={16} />
           </span>
           <span
-            className="whitespace-nowrap transition-opacity duration-300"
+            className="ml-2 text-[length:var(--fs-base)] whitespace-nowrap transition-opacity duration-300"
             style={{ opacity: showLabels ? 1 : 0 }}
           >
             {t("sidebar.newChat")}

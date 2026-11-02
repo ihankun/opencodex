@@ -8,8 +8,6 @@ interface ElectronWindowsTitlebarProps {
   sidebarExpanded: boolean
   onToggleSidebar: () => void
   onNewTask: () => void
-  onOpenSidebarPreview: () => void
-  onCloseSidebarPreview: () => void
   onOpenSearch: () => void
   sidebarTitle: string
   newTaskTitle: string
@@ -24,8 +22,6 @@ export function ElectronWindowsTitlebar({
   sidebarExpanded,
   onToggleSidebar,
   onNewTask,
-  onOpenSidebarPreview,
-  onCloseSidebarPreview,
   onOpenSearch,
   sidebarTitle,
   newTaskTitle,
@@ -88,8 +84,6 @@ export function ElectronWindowsTitlebar({
       <div className="flex items-center gap-2 pl-3">
         <button
           type="button"
-          onPointerEnter={onOpenSidebarPreview}
-          onPointerLeave={onCloseSidebarPreview}
           onPointerDownCapture={event => event.stopPropagation()}
           onMouseDownCapture={event => event.stopPropagation()}
           onClickCapture={event => {

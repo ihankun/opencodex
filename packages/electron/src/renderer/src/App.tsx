@@ -98,20 +98,14 @@ function ElectronSidebarToggle({
   expanded,
   title,
   onToggle,
-  onPreviewOpen,
-  onPreviewClose,
 }: {
   expanded: boolean
   title: string
   onToggle: () => void
-  onPreviewOpen: () => void
-  onPreviewClose: () => void
 }) {
   return createPortal(
     <button
       type="button"
-      onPointerEnter={onPreviewOpen}
-      onPointerLeave={onPreviewClose}
       onPointerDownCapture={event => event.stopPropagation()}
       onMouseDownCapture={event => event.stopPropagation()}
       onClickCapture={event => {
@@ -198,8 +192,6 @@ function App() {
   const syncingFromRouteRef = useRef(false)
   const lastRouteSessionIdRef = useRef<string | null | undefined>(undefined)
   const sidebarTransitionTimerRef = useRef<number | null>(null)
-  const sidebarPreviewCloseTimerRef = useRef<number | null>(null)
-  const [sidebarPreviewOpen, setSidebarPreviewOpen] = useState(false)
   // 当 currentDirectory 为 undefined 时表示全局模式，
   // 不应 fallback 到 session 自身的 directory，否则 replaceSession 会把 dir 参数写回 URL
   const focusedRouteDirectory =
@@ -646,40 +638,17 @@ function App() {
     }
 
     if (sidebarExpanded) {
-      setSidebarPreviewOpen(false)
       handleCloseSidebar()
     } else {
-      setSidebarPreviewOpen(false)
       handleOpenSidebar()
     }
   }, [handleCloseSidebar, handleOpenSidebar, isMobilePanelLayout, sidebarExpanded])
-
-  const openSidebarPreview = useCallback(() => {
-    if (sidebarExpanded || isMobilePanelLayout) return
-    if (sidebarPreviewCloseTimerRef.current !== null) {
-      window.clearTimeout(sidebarPreviewCloseTimerRef.current)
-      sidebarPreviewCloseTimerRef.current = null
-    }
-    setSidebarPreviewOpen(true)
-  }, [isMobilePanelLayout, sidebarExpanded])
-
-  const closeSidebarPreview = useCallback(() => {
-    if (sidebarExpanded) return
-    if (sidebarPreviewCloseTimerRef.current !== null) window.clearTimeout(sidebarPreviewCloseTimerRef.current)
-    sidebarPreviewCloseTimerRef.current = window.setTimeout(() => {
-      sidebarPreviewCloseTimerRef.current = null
-      setSidebarPreviewOpen(false)
-    }, 120)
-  }, [sidebarExpanded])
 
   useEffect(() => {
     return () => {
       if (sidebarTransitionTimerRef.current !== null) {
         window.clearTimeout(sidebarTransitionTimerRef.current)
         window.dispatchEvent(new CustomEvent('panel-resize-end'))
-      }
-      if (sidebarPreviewCloseTimerRef.current !== null) {
-        window.clearTimeout(sidebarPreviewCloseTimerRef.current)
       }
     }
   }, [])
@@ -1201,8 +1170,6 @@ function App() {
           sidebarExpanded={sidebarExpanded}
           onToggleSidebar={handleToggleSidebar}
           onNewTask={handleNewSession}
-          onOpenSidebarPreview={openSidebarPreview}
-          onCloseSidebarPreview={closeSidebarPreview}
           onOpenSearch={() => setSessionSearchOpen(true)}
           sidebarTitle={sidebarExpanded ? t('chat:sidebar.collapseSidebar') : t('chat:sidebar.expandSidebar')}
           newTaskTitle={t('chat:sidebar.newChat')}
@@ -1218,8 +1185,6 @@ function App() {
             expanded={sidebarExpanded}
             title={sidebarExpanded ? t('chat:sidebar.collapseSidebar') : t('chat:sidebar.expandSidebar')}
             onToggle={handleToggleSidebar}
-            onPreviewOpen={openSidebarPreview}
-            onPreviewClose={closeSidebarPreview}
           />
           <ElectronSidebarSearch title={t('chat:sidebar.search')} onOpen={() => setSessionSearchOpen(true)} />
           <ElectronHistoryNavigation backTitle={t('components:desktopTitlebar.goBack')} forwardTitle={t('components:desktopTitlebar.goForward')} onGoBack={handleGoBack} onGoForward={handleGoForward} />
@@ -1373,32 +1338,6 @@ function App() {
                   projectDialogOpen={projectDialogOpen}
                   onProjectDialogClose={closeProjectDialog}
                 />
-              )}
-
-              {!sidebarExpanded && sidebarPreviewOpen && (
-                <div
-                  className="sidebar-surface absolute left-0 top-0 bottom-0 z-[250]"
-                  onPointerEnter={openSidebarPreview}
-                  onPointerLeave={closeSidebarPreview}
-                >
-                  <Sidebar
-                    isOpen={true}
-                    selectedSessionId={paneLayout.focusedSessionId}
-                    onSelectSession={handleSelectSession}
-                    onNewSession={handleNewSession}
-                    onOpen={handleOpenSidebar}
-                    onClose={handleCloseSidebar}
-                    onOpenSettings={openSettings}
-                    onOpenNotifications={() => setNotificationCenterOpen(true)}
-                    onOpenSearch={() => setSessionSearchOpen(true)}
-                    onOpenPlugins={openPluginPage}
-                    onOpenTasks={openTaskPage}
-                    activeUtilityPage={utilityPage === 'settings' ? null : utilityPage}
-                    projectDialogOpen={projectDialogOpen}
-                    onProjectDialogClose={closeProjectDialog}
-                    previewMode
-                  />
-                </div>
               )}
 
               <div className="chat-surface flex-1 flex min-w-0 h-full p-1">
