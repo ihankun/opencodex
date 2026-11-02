@@ -23,6 +23,7 @@ interface SidebarProps {
   onOpen: () => void
   onClose: () => void
   onOpenSettings?: () => void
+  onOpenNotifications?: () => void
   onOpenSearch?: () => void
   onOpenPlugins?: () => void
   onOpenTasks?: () => void
@@ -41,6 +42,7 @@ export const Sidebar = memo(function Sidebar({
   onOpen,
   onClose,
   onOpenSettings,
+  onOpenNotifications,
   onOpenSearch,
   onOpenPlugins,
   onOpenTasks,
@@ -270,6 +272,7 @@ export const Sidebar = memo(function Sidebar({
               isMobile={true}
               isExpanded={true}
               onOpenSettings={onOpenSettings}
+              onOpenNotifications={onOpenNotifications}
               onOpenSearch={onOpenSearch}
               onOpenPlugins={onOpenPlugins}
               onOpenTasks={onOpenTasks}
@@ -328,6 +331,7 @@ export const Sidebar = memo(function Sidebar({
             isMobile={true}
             isExpanded={true}
             onOpenSettings={onOpenSettings}
+            onOpenNotifications={onOpenNotifications}
             onOpenSearch={onOpenSearch}
             onOpenPlugins={onOpenPlugins}
             onOpenTasks={onOpenTasks}
@@ -367,6 +371,7 @@ export const Sidebar = memo(function Sidebar({
           isMobile={false}
           isExpanded={isOpen}
           onOpenSettings={onOpenSettings}
+          onOpenNotifications={onOpenNotifications}
           onOpenSearch={onOpenSearch}
           onOpenPlugins={onOpenPlugins}
           onOpenTasks={onOpenTasks}

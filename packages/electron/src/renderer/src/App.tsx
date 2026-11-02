@@ -9,7 +9,6 @@ import type { CommandItem } from './components/CommandPalette'
 import { ToastContainer } from './components/ToastContainer'
 import { DesktopTitlebar } from './components/DesktopTitlebar'
 import { ElectronWindowsTitlebar } from './components/ElectronWindowsTitlebar'
-import { ElectronUpdateToggle } from './components/ElectronUpdateToggle'
 import {
   ChevronLeftIcon,
   ChevronRightIcon,
@@ -19,7 +18,6 @@ import {
   SearchIcon,
   SidebarIcon,
   TeachIcon,
-  BellIcon,
 } from './components/Icons'
 import { NotificationCenterDialog } from './components/NotificationCenter'
 import { useDirectory, useGlobalEvents, useGlobalKeybindings, useRouter } from './hooks'
@@ -135,32 +133,6 @@ function ElectronSidebarSearch({ title, onOpen }: { title: string; onOpen: () =>
   return createPortal(
     <button type="button" onClick={onOpen} aria-label={title} title={title} className="electron-sidebar-search window-no-drag">
       <SearchIcon size={16} />
-    </button>,
-    document.body,
-  )
-}
-
-function ElectronNotificationToggle({
-  title,
-  unreadCount,
-  onOpen,
-}: {
-  title: string
-  unreadCount: number
-  onOpen: () => void
-}) {
-  return createPortal(
-    <button
-      type="button"
-      onClick={onOpen}
-      aria-label={title}
-      title={title}
-      className="electron-notification-toggle window-no-drag"
-    >
-      <BellIcon size={18} />
-      {unreadCount > 0 && (
-        <span className="electron-notification-badge">{unreadCount > 99 ? '99+' : unreadCount}</span>
-      )}
     </button>,
     document.body,
   )
@@ -1232,11 +1204,9 @@ function App() {
           onOpenSidebarPreview={openSidebarPreview}
           onCloseSidebarPreview={closeSidebarPreview}
           onOpenSearch={() => setSessionSearchOpen(true)}
-          onOpenNotifications={() => setNotificationCenterOpen(true)}
           sidebarTitle={sidebarExpanded ? t('chat:sidebar.collapseSidebar') : t('chat:sidebar.expandSidebar')}
           newTaskTitle={t('chat:sidebar.newChat')}
           searchTitle={t('chat:sidebar.search')}
-          notificationsTitle={t('chat:sidebar.notifications')}
           backTitle={t('components:desktopTitlebar.goBack')}
           forwardTitle={t('components:desktopTitlebar.goForward')}
           onGoBack={handleGoBack}
@@ -1252,13 +1222,7 @@ function App() {
             onPreviewClose={closeSidebarPreview}
           />
           <ElectronSidebarSearch title={t('chat:sidebar.search')} onOpen={() => setSessionSearchOpen(true)} />
-          <ElectronNotificationToggle
-            title={t('chat:sidebar.notifications')}
-            unreadCount={unreadNotificationCount}
-            onOpen={() => setNotificationCenterOpen(true)}
-          />
           <ElectronHistoryNavigation backTitle={t('components:desktopTitlebar.goBack')} forwardTitle={t('components:desktopTitlebar.goForward')} onGoBack={handleGoBack} onGoForward={handleGoForward} />
-          <ElectronUpdateToggle />
         </>
       ) : null}
       <InternalDragLayer />
@@ -1305,6 +1269,7 @@ function App() {
                     onOpen={handleOpenSidebar}
                     onClose={handleCloseSidebar}
                     onOpenSettings={openSettings}
+                    onOpenNotifications={() => setNotificationCenterOpen(true)}
                     onOpenSearch={() => setSessionSearchOpen(true)}
                     onOpenPlugins={openPluginPage}
                     onOpenTasks={openTaskPage}
@@ -1400,6 +1365,7 @@ function App() {
                   onOpen={handleOpenSidebar}
                   onClose={handleCloseSidebar}
                   onOpenSettings={openSettings}
+                  onOpenNotifications={() => setNotificationCenterOpen(true)}
                   onOpenSearch={() => setSessionSearchOpen(true)}
                   onOpenPlugins={openPluginPage}
                   onOpenTasks={openTaskPage}
@@ -1423,6 +1389,7 @@ function App() {
                     onOpen={handleOpenSidebar}
                     onClose={handleCloseSidebar}
                     onOpenSettings={openSettings}
+                    onOpenNotifications={() => setNotificationCenterOpen(true)}
                     onOpenSearch={() => setSessionSearchOpen(true)}
                     onOpenPlugins={openPluginPage}
                     onOpenTasks={openTaskPage}

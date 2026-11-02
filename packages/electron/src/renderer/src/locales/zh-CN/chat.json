@@ -414,6 +414,7 @@
     },
     "update": {
       "title": "软件更新",
+      "check": "检查更新",
       "checking": "正在检查更新…",
       "available": "发现新版本",
       "newVersion": "新版本",

@@ -1,31 +1,12 @@
-import { createPortal } from 'react-dom'
-import type { Ref } from 'react'
+import { useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Button } from '../../../components/ui/Button'
-import { DownloadIcon, ExternalLinkIcon, QuestionIcon, RetryIcon, SpinnerIcon, XIcon } from '../../../components/Icons'
+import { Dialog } from '../../../components/ui/Dialog'
+import { DownloadIcon, ExternalLinkIcon, RetryIcon, SpinnerIcon } from '../../../components/Icons'
 import { RELEASES_PAGE_URL, hasUpdateAvailable, updaterHasNewVersion, updateStore, useUpdateStore } from '../../../store/updateStore'
 import { openUrl } from '../../../utils/browserOpen'
 
-export interface UpdatePanelPosition {
-  top: number
-  left: number
-  width: number
-}
-
-export function UpdatePanel({
-  position,
-  visible,
-  onClose,
-  ref,
-  placement = 'up',
-}: {
-  position: UpdatePanelPosition
-  visible: boolean
-  onClose: () => void
-  ref?: Ref<HTMLDivElement>
-  /** up：面板在锚点上方（底部栏按钮）；down：面板在锚点下方（顶部条带按钮） */
-  placement?: 'up' | 'down'
-}) {
+export function UpdateDialog({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) {
   const { t } = useTranslation(['chat', 'common'])
   const updateState = useUpdateStore()
   const updater = updateState.updater
@@ -35,46 +16,13 @@ export function UpdatePanel({
   const updateAvailable = updaterHasNewVersion(updateState) || hasUpdateAvailable(updateState)
   const percent = updater.progress?.percent
 
-  return createPortal(
-    <div
-      ref={ref}
-      className={`
-        fixed z-[9999] rounded-lg border border-border-200/60 glass-alt sidebar-footer-popover shadow-lg
-        transition-all duration-150 ease-out
-        ${visible ? 'opacity-100 scale-100' : 'opacity-0 scale-95'}
-      `}
-      style={
-        placement === 'down'
-          ? {
-              top: position.top,
-              left: position.left,
-              width: position.width,
-              transformOrigin: 'top left',
-            }
-          : {
-              bottom: window.innerHeight - position.top,
-              left: position.left,
-              width: position.width,
-              transformOrigin: 'bottom left',
-            }
-      }
-    >
-      <div className="flex items-center justify-between px-3 pt-2.5 pb-1">
-        <div className="flex items-center gap-2">
-          <QuestionIcon size={14} className="text-text-400" />
-          <span className="text-[length:var(--fs-sm)] font-semibold text-text-100">{t('sidebar.update.title')}</span>
-        </div>
-        <button
-          type="button"
-          onClick={onClose}
-          aria-label={t('common:close')}
-          className="rounded-md p-1 text-text-400 transition-colors hover:bg-bg-200 hover:text-text-100"
-        >
-          <XIcon size={14} />
-        </button>
-      </div>
+  useEffect(() => {
+    if (isOpen) void updateStore.checkForUpdates()
+  }, [isOpen])
 
-      <div className="space-y-2.5 px-3 pb-3">
+  return (
+    <Dialog isOpen={isOpen} onClose={onClose} title={t('sidebar.update.title')} width={420}>
+      <div className="space-y-3">
         {updater.status === 'checking' && (
           <div className="flex items-center gap-2 text-[length:var(--fs-sm)] text-text-300">
             <SpinnerIcon size={14} className="animate-spin" />
@@ -165,7 +113,6 @@ export function UpdatePanel({
           </Button>
         </div>
       </div>
-    </div>,
-    document.body,
+    </Dialog>
   )
 }

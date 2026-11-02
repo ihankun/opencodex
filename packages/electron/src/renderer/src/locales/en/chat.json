@@ -416,6 +416,7 @@
     },
     "update": {
       "title": "Software Update",
+      "check": "Check for updates",
       "checking": "Checking for updates…",
       "available": "New version available",
       "newVersion": "New version",

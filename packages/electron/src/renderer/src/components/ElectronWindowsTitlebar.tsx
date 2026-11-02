@@ -1,10 +1,8 @@
 import { useCallback, useEffect, useState } from 'react'
-import { ChevronLeftIcon, ChevronRightIcon, SearchIcon, SidebarIcon, BellIcon, CirclePlusIcon } from './Icons'
-import { ElectronUpdateToggle } from './ElectronUpdateToggle'
+import { ChevronLeftIcon, ChevronRightIcon, SearchIcon, SidebarIcon, CirclePlusIcon } from './Icons'
 import { DESKTOP_TITLEBAR_HEIGHT, DESKTOP_TITLEBAR_Z_INDEX } from '../constants/desktopWindow'
 import { useTranslation } from 'react-i18next'
 import { canGoBack, canGoForward, subscribe } from '../store/navigationHistoryStore'
-import { useUnreadNotificationCount } from '../store/notificationStore'
 
 interface ElectronWindowsTitlebarProps {
   sidebarExpanded: boolean
@@ -13,11 +11,9 @@ interface ElectronWindowsTitlebarProps {
   onOpenSidebarPreview: () => void
   onCloseSidebarPreview: () => void
   onOpenSearch: () => void
-  onOpenNotifications: () => void
   sidebarTitle: string
   newTaskTitle: string
   searchTitle: string
-  notificationsTitle: string
   backTitle: string
   forwardTitle: string
   onGoBack: () => void
@@ -31,11 +27,9 @@ export function ElectronWindowsTitlebar({
   onOpenSidebarPreview,
   onCloseSidebarPreview,
   onOpenSearch,
-  onOpenNotifications,
   sidebarTitle,
   newTaskTitle,
   searchTitle,
-  notificationsTitle,
   backTitle,
   forwardTitle,
   onGoBack,
@@ -44,7 +38,6 @@ export function ElectronWindowsTitlebar({
   const { t } = useTranslation('common')
   const [isMaximized, setIsMaximized] = useState(false)
   const [navState, setNavState] = useState(() => ({ back: canGoBack(), forward: canGoForward() }))
-  const unreadNotificationCount = useUnreadNotificationCount()
   useEffect(() => subscribe(() => setNavState({ back: canGoBack(), forward: canGoForward() })), [])
 
   useEffect(() => {
@@ -130,20 +123,6 @@ export function ElectronWindowsTitlebar({
         >
           <SearchIcon size={18} />
         </button>
-        <button
-          type="button"
-          onClick={onOpenNotifications}
-          aria-label={notificationsTitle}
-          title={notificationsTitle}
-          className="electron-windows-titlebar-btn window-no-drag"
-        >
-          <span className="relative flex items-center justify-center">
-            <BellIcon size={18} />
-            {unreadNotificationCount > 0 && (
-              <span className="electron-notification-badge">{unreadNotificationCount > 99 ? '99+' : unreadNotificationCount}</span>
-            )}
-          </span>
-        </button>
         <div className="flex items-center gap-0.5">
           <button
             type="button"
@@ -166,7 +145,6 @@ export function ElectronWindowsTitlebar({
             <ChevronRightIcon size={18} />
           </button>
         </div>
-        <ElectronUpdateToggle variant="titlebar" />
       </div>
 
       <div className="flex-1" />

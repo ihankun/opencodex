@@ -87,6 +87,7 @@ interface SidePanelProps {
   isMobile?: boolean
   isExpanded?: boolean
   onOpenSettings?: () => void
+  onOpenNotifications?: () => void
 }
 
 function navigationItemClass(active: boolean) {
@@ -290,6 +291,7 @@ export function SidePanel({
   isMobile = false,
   isExpanded = true,
   onOpenSettings,
+  onOpenNotifications,
 }: SidePanelProps) {
   const { t } = useTranslation(["chat", "common"])
   const desktopPlatform = getDesktopPlatform()
@@ -2003,6 +2005,7 @@ export function SidePanel({
         showLabels={showLabels}
         connectionState={connectionState?.state || "disconnected"}
         onOpenSettings={onOpenSettings}
+        onOpenNotifications={onOpenNotifications}
       />
 
       {projectContextMenu &&

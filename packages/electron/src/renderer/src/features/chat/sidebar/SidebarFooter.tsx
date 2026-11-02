@@ -10,13 +10,18 @@ import {
   SystemIcon,
   SmartphoneIcon,
   GlobeIcon,
+  BellIcon,
+  QuestionIcon,
 } from '../../../components/Icons'
 import { getProviders } from '../../../api'
 import { useServerStore, useTheme } from '../../../hooks'
 import { useDesktopPreferences } from '../../../store/desktopPreferencesStore'
+import { useUnreadNotificationCount } from '../../../store/notificationStore'
+import { hasUpdateAvailable, updaterHasNewVersion, useUpdateStore } from '../../../store/updateStore'
 import { serverStore } from '../../../store/serverStore'
 import { ImBridgeDialog } from './ImBridgeDialog'
 import { ServerSwitchDialog } from './ServerSwitchDialog'
+import { UpdateDialog } from './UpdateDialog'
 import { useImBridgeData } from '../../settings/components/imBotShared'
 import type { QuotaProviderResult } from '../../../../../shared/quota'
 
@@ -45,13 +50,17 @@ export interface SidebarFooterProps {
   showLabels: boolean
   connectionState: string
   onOpenSettings?: () => void
+  onOpenNotifications?: () => void
 }
 
-export function SidebarFooter({ showLabels, connectionState, onOpenSettings }: SidebarFooterProps) {
+export function SidebarFooter({ showLabels, connectionState, onOpenSettings, onOpenNotifications }: SidebarFooterProps) {
   const { t, i18n } = useTranslation(['chat', 'common'])
   const { mode: themeMode, setThemeWithAnimation: onThemeChange } = useTheme()
   const { activeServer } = useServerStore()
   const preferences = useDesktopPreferences()
+  const unreadNotificationCount = useUnreadNotificationCount()
+  const updateState = useUpdateStore()
+  const updateAvailable = updaterHasNewVersion(updateState) || hasUpdateAvailable(updateState)
   const [isOpen, setIsOpen] = useState(false)
   const [quotaExpanded, setQuotaExpanded] = useState(false)
   const [quotaLoading, setQuotaLoading] = useState(false)
@@ -61,6 +70,7 @@ export function SidebarFooter({ showLabels, connectionState, onOpenSettings }: S
   const [isVisible, setIsVisible] = useState(false)
   const [imDialogOpen, setImDialogOpen] = useState(false)
   const [serverSwitchOpen, setServerSwitchOpen] = useState(false)
+  const [updateDialogOpen, setUpdateDialogOpen] = useState(false)
   const imBridge = useImBridgeData({ refreshConfigOnEvent: true })
   const prevShowLabelsRef = useRef(showLabels)
   const containerRef = useRef<HTMLDivElement>(null)
@@ -152,12 +162,6 @@ export function SidebarFooter({ showLabels, connectionState, onOpenSettings }: S
     if (isOpen) closeMenu()
     else openMenu()
   }, [isOpen, openMenu, closeMenu])
-
-  // 打开设置：顺带收起已展开的菜单
-  const handleOpenSettings = useCallback(() => {
-    if (isOpen) closeMenu()
-    onOpenSettings?.()
-  }, [isOpen, closeMenu, onOpenSettings])
 
   // 点击外部关闭
   useEffect(() => {
@@ -359,19 +363,51 @@ export function SidebarFooter({ showLabels, connectionState, onOpenSettings }: S
               </div>
             )}
 
-            {/* 设置项仅在收起模式保留（展开模式下已独立为底部栏图标，见下方） */}
+            {enabledQuotaProviders.length > 0 && <div className="my-1 h-px bg-border-200/30" />}
+
+            {/* 收起侧边栏时底部没有图标位，通知入口保留在菜单里 */}
             {!showLabels && (
               <button
                 onClick={() => {
                   closeMenu()
-                  onOpenSettings?.()
+                  onOpenNotifications?.()
                 }}
                 className="w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-[length:var(--fs-sm)] text-text-300 hover:text-text-100 hover:bg-bg-200/50 transition-colors text-left"
               >
-                <CogIcon size={14} />
-                <span>{t('sidebar.settings')}</span>
+                <BellIcon size={14} />
+                <span className="flex-1">{t('sidebar.notifications')}</span>
+                {unreadNotificationCount > 0 && (
+                  <span className="rounded-full bg-danger-100 px-1.5 py-0.5 text-[length:var(--fs-xxs)] font-semibold leading-none text-[hsl(var(--always-white))]">
+                    {unreadNotificationCount > 99 ? '99+' : unreadNotificationCount}
+                  </span>
+                )}
               </button>
             )}
+
+            {/* 检查更新：从标题栏移入菜单，点击后打开居中弹窗 */}
+            <button
+              onClick={() => {
+                closeMenu()
+                setUpdateDialogOpen(true)
+              }}
+              className="w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-[length:var(--fs-sm)] text-text-300 hover:text-text-100 hover:bg-bg-200/50 transition-colors text-left"
+            >
+              <QuestionIcon size={14} />
+              <span className="flex-1">{t('sidebar.update.check')}</span>
+              {updateAvailable && <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-danger-100" />}
+            </button>
+
+            {/* 设置入口：展开与收起模式统一收进底部下拉菜单 */}
+            <button
+              onClick={() => {
+                closeMenu()
+                onOpenSettings?.()
+              }}
+              className="w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-[length:var(--fs-sm)] text-text-300 hover:text-text-100 hover:bg-bg-200/50 transition-colors text-left"
+            >
+              <CogIcon size={14} />
+              <span>{t('sidebar.settings')}</span>
+            </button>
           </div>
         </div>,
         document.body,
@@ -406,6 +442,22 @@ export function SidebarFooter({ showLabels, connectionState, onOpenSettings }: S
             </span>
           </button>
 
+          {/* 通知入口：从标题栏移到底部，与账号状态并排 */}
+          {showLabels && (
+            <button
+              type="button"
+              onClick={onOpenNotifications}
+              aria-label={t('sidebar.notifications')}
+              title={t('sidebar.notifications')}
+              className="relative h-8 w-8 shrink-0 flex items-center justify-center rounded-lg sidebar-hover-row hover:text-text-100 text-text-400 transition-all duration-300"
+            >
+              <BellIcon size={16} />
+              {unreadNotificationCount > 0 && (
+                <span className="electron-notification-badge">{unreadNotificationCount > 99 ? '99+' : unreadNotificationCount}</span>
+              )}
+            </button>
+          )}
+
           {/* IM 机器人入口：点击打开独立配置弹窗 */}
           {showLabels && imBridge.available && (
             <button
@@ -428,19 +480,6 @@ export function SidebarFooter({ showLabels, connectionState, onOpenSettings }: S
               <SmartphoneIcon size={16} />
             </button>
           )}
-
-          {/* 设置入口（原悬浮菜单内的设置项独立为图标） */}
-          {showLabels && (
-            <button
-              type="button"
-              onClick={handleOpenSettings}
-              aria-label={t('sidebar.settings')}
-              title={t('sidebar.settings')}
-              className="h-8 w-8 shrink-0 flex items-center justify-center rounded-lg sidebar-hover-row hover:text-text-100 text-text-400 transition-all duration-300"
-            >
-              <CogIcon size={16} />
-            </button>
-          )}
         </div>
       </div>
 
@@ -448,6 +487,7 @@ export function SidebarFooter({ showLabels, connectionState, onOpenSettings }: S
 
       <ImBridgeDialog isOpen={imDialogOpen} onClose={() => setImDialogOpen(false)} />
       <ServerSwitchDialog isOpen={serverSwitchOpen} onClose={() => setServerSwitchOpen(false)} />
+      <UpdateDialog isOpen={updateDialogOpen} onClose={() => setUpdateDialogOpen(false)} />
     </div>
   )
 }
