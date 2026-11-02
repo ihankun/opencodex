@@ -411,6 +411,11 @@ function NewTaskContextBar({ paneId, onApplyProfile, onPreflight }: { paneId: st
     }
 
     let disposed = false
+    // The first branch read can race the managed service becoming reachable. Retry when the
+    // runtime URL changes and stop the spinner if the request never settles.
+    const timeoutId = window.setTimeout(() => {
+      if (!disposed) setBranchLoading(false)
+    }, 15_000)
     setBranchLoading(true)
     void Promise.all([getVcsInfo(currentDirectory), listVcsBranches(currentDirectory).catch(() => []), getVcsDiff('git', currentDirectory).catch(() => [])])
       .then(([info, listed, changes]) => {
@@ -418,13 +423,16 @@ function NewTaskContextBar({ paneId, onApplyProfile, onPreflight }: { paneId: st
         setBranches(Array.isArray(listed) && listed.length > 0 ? listed : info?.branch ? [{ name: info.branch, current: true }] : [])
         setDirtyCount(changes.length)
       })
+      .catch(() => {})
       .finally(() => {
+        window.clearTimeout(timeoutId)
         if (!disposed) setBranchLoading(false)
       })
     return () => {
       disposed = true
+      window.clearTimeout(timeoutId)
     }
-  }, [activeServer?.id, currentDirectory])
+  }, [activeServer?.id, activeServer?.url, currentDirectory])
 
   const selectServer = async (serverId: string) => {
     if (serverId === activeServer?.id) {

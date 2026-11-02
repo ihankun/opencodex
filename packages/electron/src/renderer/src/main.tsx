@@ -198,13 +198,24 @@ function StartupFallback() {
   )
 }
 
+const SERVICE_BOOT_TIMEOUT = 15_000
+
 async function startApp() {
-  const electronService = initializeElectronService()
+  const electronService = initializeElectronService().catch(error => {
+    console.error('initialize electron service failed', error)
+  })
+
+  // Components issue server requests as soon as they mount. Wait for the managed service's runtime
+  // URL and credential first so they never race the placeholder local URL. The static splash is
+  // already visible, so this does not add another blank frame.
+  await Promise.race([
+    electronService,
+    new Promise<void>(resolve => window.setTimeout(resolve, SERVICE_BOOT_TIMEOUT)),
+  ])
 
   bootstrap()
 
-  await electronService
-  void initializeModels()
+  void electronService.then(() => initializeModels())
 }
 
 void startApp()
