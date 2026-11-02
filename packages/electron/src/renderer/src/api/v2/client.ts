@@ -299,8 +299,9 @@ async function buildPromptInput(input: Json) {
 
   async function providerList(input: Json) {
     const location = toLocation(input.directory as string | undefined)
+    const providerQuery = input.all === true ? { ...location, all: true } : location
     const [providers, models, defaultModel, integrations] = await Promise.all([
-      v2.provider.list(location),
+      v2.provider.list(providerQuery),
       v2.model.list(location),
       v2.model.default(location),
       v2.integration.list(location),
@@ -321,7 +322,10 @@ async function buildPromptInput(input: Json) {
 
   async function providerAuth(input: Json) {
     const integrations = await v2.integration.list(toLocation(input.directory as string | undefined))
-    const providers = await v2.provider.list(toLocation(input.directory as string | undefined))
+    const providers = await v2.provider.list({
+      ...toLocation(input.directory as string | undefined),
+      all: true,
+    })
     const result: Record<string, ProviderAuthMethod[]> = {}
     for (const integration of integrations.data) {
       const provider = providers.data.find(

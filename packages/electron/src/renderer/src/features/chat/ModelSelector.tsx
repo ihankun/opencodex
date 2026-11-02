@@ -591,7 +591,7 @@ export const ModelSelector = memo(
     const loadProviders = useCallback(() => {
       let cancelled = false
       setProvidersLoading(true)
-      void getProviders(directory)
+      void getProviders(directory, { all: true })
         .then(result => {
           if (!cancelled) setProviderCatalog(result)
         })

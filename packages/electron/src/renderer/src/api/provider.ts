@@ -8,9 +8,17 @@ export interface ProviderListResult {
   default: Record<string, string>
 }
 
-export async function getProviders(directory?: string): Promise<ProviderListResult> {
+export async function getProviders(
+  directory?: string,
+  options?: { all?: boolean },
+): Promise<ProviderListResult> {
   const sdk = getSDKClient()
-  return unwrap(await sdk.provider.list({ directory: formatPathForApi(directory) }))
+  return unwrap(
+    await sdk.provider.list({
+      directory: formatPathForApi(directory),
+      ...(options?.all ? { all: true } : {}),
+    }),
+  )
 }
 
 /** 强制服务端重新拉取 models.dev 目录，并返回更新后的供应商列表 */

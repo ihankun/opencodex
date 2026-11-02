@@ -10,10 +10,10 @@ export const ProviderHandler = HttpApiBuilder.group(Api, "server.provider", (han
     return handlers
       .handle(
         "provider.list",
-        Effect.fn(function* () {
+        Effect.fn(function* (ctx) {
           yield* awaitPlugins
           const providers = yield* Provider.Service
-          return yield* response(providers.available())
+          return yield* response(ctx.query.all ? providers.all() : providers.available())
         }),
       )
       .handle(

@@ -1485,7 +1485,10 @@ export interface VoiceApi<E = never> {
   readonly session: VoiceSessionOperation<E>
 }
 
-export type ProviderListInput = { readonly location?: { readonly directory?: string | undefined } | undefined }
+export type ProviderListInput = {
+  readonly location?: { readonly directory?: string | undefined } | undefined
+  readonly all?: boolean | undefined
+}
 export type ProviderListOutput = { readonly location: Location.PublicRef; readonly data: ReadonlyArray<Provider.Info> }
 export type ProviderListOperation<E = never> = (input?: ProviderListInput) => Effect.Effect<ProviderListOutput, E>
 

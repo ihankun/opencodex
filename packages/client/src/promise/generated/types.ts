@@ -3883,7 +3883,10 @@ export type VoiceSessionInput = {
 
 export type VoiceSessionOutput = VoiceSessionResponse["data"]
 
-export type ProviderListInput = { readonly location?: { readonly directory?: string | undefined } | undefined }
+export type ProviderListInput = {
+  readonly location?: { readonly directory?: string | undefined } | undefined
+  readonly all?: boolean | undefined
+}
 
 export type ProviderListOutput = { location: LocationPublicRef; data: Array<ProviderInfo> }
 

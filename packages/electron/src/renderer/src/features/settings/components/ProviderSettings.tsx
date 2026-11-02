@@ -19,6 +19,24 @@ import type { Provider, ProviderAuthMethod } from "../../../types/api/legacy-sdk
 
 type AuthPrompt = NonNullable<ProviderAuthMethod['prompts']>[number]
 
+// Keep the providers users are most likely to configure at the top; the rest stay alphabetical.
+const popularProviders = [
+  'opencode-go',
+  'opencode',
+  'anthropic',
+  'github-copilot',
+  'openai',
+  'google',
+  'openrouter',
+  'vercel',
+]
+
+function providerRank(provider: Provider, connected: Set<string>) {
+  if (connected.has(provider.id)) return 0
+  const popular = popularProviders.indexOf(provider.id)
+  return popular === -1 ? popularProviders.length + 1 : popular + 1
+}
+
 function providerModelCount(provider: Provider) {
   return Object.keys(provider.models ?? {}).length
 }
@@ -66,7 +84,7 @@ export function ProviderSettings() {
     setLoading(true)
     setError(null)
     try {
-      const [providers, methods] = await Promise.all([getProviders(), getProviderAuthMethods()])
+      const [providers, methods] = await Promise.all([getProviders(undefined, { all: true }), getProviderAuthMethods()])
       setProvidersResult(providers)
       setAuthMethods(methods)
       setPromptValues(current =>
@@ -110,6 +128,7 @@ export function ProviderSettings() {
       })
       .toSorted(
         (a, b) =>
+          providerRank(a, connected) - providerRank(b, connected) ||
           (a.name || a.id).localeCompare(b.name || b.id, undefined, { sensitivity: 'base', numeric: true }) ||
           a.id.localeCompare(b.id, undefined, { sensitivity: 'base', numeric: true }),
       )
@@ -241,6 +260,7 @@ export function ProviderSettings() {
           <div className="space-y-3">
             {filteredProviders.map(provider => {
               const isConnected = connected.has(provider.id)
+              const modelCount = providerModelCount(provider)
               const apiMethod = getApiMethod(authMethods[provider.id])
               const values = promptValues[provider.id] ?? {}
               const prompts = (apiMethod?.prompts ?? []).filter(prompt => promptVisible(prompt, values))
@@ -250,10 +270,11 @@ export function ProviderSettings() {
                 <SettingsCard
                   key={provider.id}
                   title={provider.name || provider.id}
-                  description={t('providers.providerMeta', {
-                    id: provider.id,
-                    count: providerModelCount(provider),
-                  })}
+                  description={
+                    modelCount > 0
+                      ? t('providers.providerMeta', { id: provider.id, count: modelCount })
+                      : provider.id
+                  }
                   actions={
                     <span
                       className={`rounded-full px-2 py-0.5 text-[length:var(--fs-xxs)] font-medium ${

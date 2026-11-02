@@ -1023,7 +1023,9 @@ const adaptGroupVoice = (raw: RawClient["server.voice"]) => ({
 
 const EndpointProviderList = (raw: RawClient["server.provider"]) => (input?: ProviderListInput) =>
   preserveEffect<ProviderListOutput>()(
-    raw["provider.list"]({ query: { location: input?.["location"] } }).pipe(Effect.mapError(mapClientError)),
+    raw["provider.list"]({ query: { location: input?.["location"], all: input?.["all"] } }).pipe(
+      Effect.mapError(mapClientError),
+    ),
   )
 
 const EndpointProviderGet = (raw: RawClient["server.provider"]) => (input: ProviderGetInput) =>

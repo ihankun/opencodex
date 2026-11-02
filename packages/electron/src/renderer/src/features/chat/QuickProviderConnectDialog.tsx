@@ -319,9 +319,11 @@ export function QuickProviderConnectDialog({
                   <span className="min-w-0 flex-1 truncate text-[length:var(--fs-md)] font-medium">
                     {item.name || item.id}
                   </span>
-                  <span className="text-[length:var(--fs-xs)] text-text-500">
-                    {Object.keys(item.models ?? {}).length} {t('providerConnect.models')}
-                  </span>
+                  {Object.keys(item.models ?? {}).length > 0 && (
+                    <span className="text-[length:var(--fs-xs)] text-text-500">
+                      {Object.keys(item.models ?? {}).length} {t('providerConnect.models')}
+                    </span>
+                  )}
                   {connectedSet.has(item.id) && (
                     <span className="inline-flex items-center gap-1 rounded-full bg-success-bg px-2 py-0.5 text-[length:var(--fs-xxs)] text-success-100">
                       <CheckIcon size={10} />
