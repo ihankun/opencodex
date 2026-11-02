@@ -7,6 +7,8 @@ import { Global } from "@opencode/util/global"
 import { OPENCODE_ARTIFACT, OPENCODE_CHANNEL, OPENCODE_VERSION } from "./version"
 import { AppProcess } from "@opencode/util/process"
 import { randomBytes, randomUUID } from "node:crypto"
+import { mkdirSync } from "node:fs"
+import path from "node:path"
 import { Effect, Option, Redacted, Schema } from "effect"
 import { PersistentPty } from "@opencode/schema/persistent-pty"
 import { HttpServer } from "effect/http"
@@ -59,11 +61,20 @@ const processEffect = Effect.fnUntraced(function* (options: Options) {
           ),
         )
   const global = yield* Global.Service
+  // The desktop gives project-less sessions a dedicated workspace instead of the home directory.
   // A sandbox may deny $HOME; the service then keeps the cwd it was launched from.
-  if (options.mode === "service")
-    yield* Effect.try(() => process.chdir(global.home)).pipe(
-      Effect.catch((cause) => Effect.logWarning("failed to change service directory to home", { cause })),
+  if (options.mode === "service") {
+    const desktop = process.env.OPENCODE_CLIENT === "desktop"
+    const serviceDirectory = desktop ? path.join(global.home, ".opencodex", "workspace") : global.home
+    yield* Effect.try(() => {
+      if (desktop) mkdirSync(serviceDirectory, { recursive: true })
+      process.chdir(serviceDirectory)
+    }).pipe(
+      Effect.catch((cause) =>
+        Effect.logWarning("failed to change service directory", { cause, directory: serviceDirectory }),
+      ),
     )
+  }
   return yield* Effect.scoped(
     Effect.gen(function* () {
       const foreground = options.mode === "default"
