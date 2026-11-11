@@ -115,7 +115,7 @@ export const OpencodexHandler = HttpApiBuilder.group(Api, "server.opencodex", (h
         const root = yield* fs.resolve(location.directory).pipe(Effect.catch(() => Effect.succeed(location.directory)))
         const entries = yield* fs.readDirectoryEntries(location.directory).pipe(Effect.catch(() => Effect.succeed([])))
         const discovered = yield* Effect.forEach(
-          entries.filter((entry) => entry.type === "directory"),
+          entries.filter((entry) => entry.type === "Directory"),
           (entry) =>
             Effect.gen(function* () {
               const sub = path.join(location.directory, entry.name)

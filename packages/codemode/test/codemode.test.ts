@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test"
 import { Cause, Effect, Schema } from "effect"
-import { CodeMode, Extension, Tool, toolError } from "../src/index.js"
+import { CodeMode, Extension, Tool, toolError } from "./lib/index.js"
 
 const run = (tool: Tool.Tool<never>) =>
   Effect.runPromise(CodeMode.make({ tools: { host: { call: tool } } }).execute("return await tools.host.call({})"))
@@ -167,7 +167,8 @@ describe("CodeMode call hooks", () => {
   }
   // Every hook logs its event, so the order across tools and extensions is visible.
   const observe = (events: Array<string>): CodeMode.Hooks => ({
-    "tool.before": (call) => Effect.sync(() => void events.push(`tool.before ${JSON.stringify(call)}`)),
+    "tool.before": (call) =>
+      Effect.sync(() => void events.push(`tool.before ${JSON.stringify({ name: call.name, input: call.input })}`)),
     "tool.after": (call, result) => Effect.sync(() => void events.push(`tool.after ${call.name} ${ended(result)}`)),
     "extension.before": (call) => Effect.sync(() => void events.push(`extension.before ${JSON.stringify(call)}`)),
     "extension.after": (call, result) =>
@@ -283,6 +284,36 @@ describe("CodeMode call hooks", () => {
       ok: false,
       error: { kind: "ToolFailure", message: "lookup is not allowed" },
     })
+  })
+
+  test("a before hook runs before the host function, so a denied call never reaches the host", async () => {
+    const called: Array<string> = []
+    const record = <A>(name: string, result: () => A) => {
+      called.push(name)
+      return result()
+    }
+    const runtime = CodeMode.make({
+      extensions: [
+        Extension.make({
+          name: "host",
+          globals: {
+            value: () => record("value", () => 1),
+            asyncFn: async () => record("asyncFn", () => 1),
+            promise: Extension.async(() => record("promise", () => Promise.resolve(1))),
+            effect: Extension.async(() => Effect.sync(() => record("effect", () => 1))),
+          },
+        }),
+      ],
+      hooks: { "extension.before": (call) => Effect.fail(new Error(`${call.name} is not allowed`)) },
+    })
+    const run = async (code: string) => (await Effect.runPromise(runtime.execute(code))) as { value?: unknown }
+
+    // A denied call fails the way the global would: an async global rejects its promise, a sync one throws.
+    expect(
+      await run(`return (await Promise.allSettled([asyncFn(), promise(), effect()])).map((r) => r.reason.message)`),
+    ).toMatchObject({ value: ["asyncFn is not allowed", "promise is not allowed", "effect is not allowed"] })
+    expect(await run(`try { value() } catch (e) { return e.message }`)).toMatchObject({ value: "value is not allowed" })
+    expect(called).toEqual([])
   })
 
   test("see a tool defect as the failure the program gets, and an interrupted extension call", async () => {
@@ -758,6 +789,34 @@ describe("CodeMode public contract", () => {
     }
   })
 
+  test("a freeform tool takes its one string field directly and still accepts the object", async () => {
+    const input = Schema.Struct({ url: Schema.String.annotate({ description: "Page URL" }) })
+    const fetchPage = Tool.make({
+      description: "Fetch a page",
+      input,
+      freeform: true,
+      output: Schema.String,
+      execute: ({ url }) => Effect.succeed(url),
+    })
+    const plain = Tool.make({
+      description: "Fetch a page",
+      input,
+      output: Schema.String,
+      execute: ({ url }) => Effect.succeed(url),
+    })
+    const runtime = CodeMode.make({ tools: { fetchPage, plain } })
+    expect(runtime.catalog.map((tool) => tool.signature)).toEqual([
+      "tools.fetchPage(/** Page URL */ url: string): Promise<string>",
+      "tools.plain({\n  /** Page URL */\n  url: string,\n}): Promise<string>",
+    ])
+    expect(
+      await Effect.runPromise(
+        runtime.execute('return [await tools.fetchPage("a"), await tools.fetchPage({ url: "b" })]'),
+      ),
+    ).toMatchObject({ ok: true, value: ["a", "b"] })
+    expect(await Effect.runPromise(runtime.execute('return await tools.plain("a")'))).toMatchObject({ ok: false })
+  })
+
   test("renders equivalent catalogs identically regardless of tool insertion order", () => {
     const alpha = Tool.make({
       description: "Alpha tool",
@@ -898,7 +957,7 @@ describe("CodeMode public contract", () => {
     const result = await Effect.runPromise(limited.execute(`search({}); return search({})`))
     expect(result.ok).toBe(false)
     if (!result.ok) expect(result.error.kind).toBe("ToolCallLimitExceeded")
-    expect(observed).toEqual([{ name: "search", input: {} }])
+    expect(observed).toEqual([{ name: "search", input: {}, key: expect.any(String) }])
   })
 
   test("search is an opaque, shadowable global like other built-ins", async () => {

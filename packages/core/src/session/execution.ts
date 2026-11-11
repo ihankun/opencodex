@@ -81,16 +81,26 @@ export const layer = Layer.effect(
     const releaseOnCommit = (sessionID: SessionSchema.ID) => ({
       commit: () => store.release(sessionID),
     })
+    // Why a Session's execution is being interrupted, read from the coordinator once it exists.
+    let interruption: (sessionID: SessionSchema.ID) => InterruptReason | undefined = () => undefined
     const drain = Effect.fnUntraced(function* (
       sessionID: SessionSchema.ID,
       force: boolean,
       continuation?: SessionRunner.Continuation,
       promotable: SessionInbox.Promotable = "input",
+      stepped = false,
     ): Effect.fn.Return<void, SessionRunner.RunError> {
       const session = yield* store.get(sessionID)
       if (!session) return yield* Effect.die(new Error(`Session not found: ${sessionID}`))
       const result = yield* SessionRunner.Service.use((runner) =>
-        runner.drain({ sessionID, force, continuation, promotable }),
+        runner.drain({
+          sessionID,
+          force,
+          continuation,
+          promotable,
+          stepped,
+          interruption: () => interruption(sessionID),
+        }),
       ).pipe(
         instances.provide(session),
         Effect.tapCause((cause) =>
@@ -101,8 +111,8 @@ export const layer = Layer.effect(
       )
       return yield* SessionRunner.DrainResult.$match(result, {
         Complete: () => Effect.void,
-        Moved: (result) => drain(sessionID, false, result.continuation, promotable),
-        Reloaded: (result) => drain(sessionID, result.force, result.continuation, promotable),
+        Moved: (result) => drain(sessionID, false, result.continuation, promotable, result.stepped),
+        Reloaded: (result) => drain(sessionID, result.force, result.continuation, promotable, result.stepped),
       })
     })
     const coordinator = yield* SessionRunCoordinator.make<SessionSchema.ID, SessionRunner.RunError, InterruptReason>({
@@ -144,6 +154,7 @@ export const layer = Layer.effect(
         ),
     })
 
+    interruption = coordinator.interruption
     return Service.of({
       active: coordinator.active,
       isActive: coordinator.isActive,
