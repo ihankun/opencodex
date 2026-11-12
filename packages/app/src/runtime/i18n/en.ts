@@ -272,6 +272,8 @@ export const dict = {
     "Check that your browser shows the same code before you authorize.",
   "provider.connect.oauth.auto.description":
     "Your browser opens so you can sign in to {{provider}}. Come back here when you are done.",
+  "provider.connect.oauth.auto.paste.description":
+    "Your browser opens so you can sign in to {{provider}}. If it can't reach the machine running OpenCode, paste the URL it was redirected to below.",
   "provider.connect.oauth.code.description":
     "Your browser opens so you can sign in to {{provider}}. Paste the authorization code it gives you below.",
   "provider.connect.oauth.openBrowser": "Open browser",
@@ -390,9 +392,6 @@ export const dict = {
   "dialog.mcp.signIn.open": "Sign in to {{name}}",
   "dialog.mcp.signIn.description":
     "Your browser opens so you can sign in to {{name}}. If it can't reach the machine running OpenCode, paste the URL it was redirected to below.",
-  "dialog.mcp.signIn.paste.label": "Redirect URL",
-  "dialog.mcp.signIn.paste.placeholder": "http://127.0.0.1:…/callback?code=…",
-  "dialog.mcp.signIn.paste.required": "Paste the URL from the browser's address bar",
   "dialog.mcp.signIn.syncFailed": "Signed in, but couldn't refresh {{name}}: {{error}}",
   "dialog.mcp.error.details":
     "MCP server: {{name}}\nStatus: failed\nConfiguration: mcp.servers.{{name}}\nError: {{error}}",
@@ -407,6 +406,15 @@ export const dict = {
   "mcp.timedOut": "{{name}} took too long to respond",
 
   "dialog.fork.empty": "No messages to fork from",
+  "dialog.jump.title": "Jump to message",
+  "dialog.jump.description": "Choose a message to jump to",
+  "command.session.jumpToMessage.description": "Search sent prompts in this session",
+  "dialog.jump.loading": "Loading older prompts…",
+  "dialog.jump.opening": "Opening message…",
+  "dialog.jump.failed": "Couldn’t load the full history.",
+  "dialog.jump.openFailed": "Couldn’t open that message. Try again.",
+  "dialog.jump.empty": "No sent prompts yet",
+  "dialog.jump.noMatches": "No matching prompts",
 
   "dialog.directory.action.selectFile": "Select file",
   "dialog.directory.action.selectFolder": "Select folder",
@@ -637,6 +645,11 @@ export const dict = {
   "session.background.moveRunning": "Move to background",
   "session.background.moveInline": "Press {{keybind}} to move running work to the background",
   "command.session.background": "Move to background",
+  "session.freeLimit.title": "Free limit reached",
+  "session.freeLimit.reset": "Free usage resets at {{time}}. Connect a provider or subscribe to Go to continue.",
+  "session.freeLimit.noReset": "Connect a provider or subscribe to Go to continue.",
+  "session.freeLimit.connect": "Connect provider",
+  "session.freeLimit.subscribe": "Subscribe to Go · $10/mo",
   "session.goLimit.title": "Go usage limit reached.",
   "session.goLimit.titleNamed": "Go {{name}} usage limit reached.",
   "session.goLimit.reset": "It resets at {{time}}.",
@@ -659,6 +672,10 @@ export const dict = {
   "session.todo.label.one": "{{done}} of {{count}} todo done",
   "session.todo.label.other": "{{done}} of {{count}} todos done",
   "session.timeline.working": "Working",
+  "session.timeline.status.waitingApproval": "Waiting for approval",
+  "session.timeline.status.waitingAnswer": "Waiting for your answer",
+  "session.timeline.status.waitingShell": "Waiting for shell",
+  "session.timeline.status.working": "Working",
   "session.running.stop.subagent": "Interrupt subagent",
   "session.running.stop.shell": "Kill shell command",
 
@@ -821,6 +838,11 @@ export const dict = {
   "sidebar.recent.section.recent": "Recent",
   "sidebar.recent.empty": "No recent sessions",
   "sidebar.recent.pin": "Pin",
+  "sidebar.recent.mute": "Mute",
+  "sidebar.recent.muted": "Muted",
+  "sidebar.recent.unmute": "Unmute",
+  "sidebar.recent.hide": "Hide",
+  "sidebar.recent.unhide": "Unhide",
   "sidebar.recent.unpin": "Unpin",
   "sidebar.recent.moveUp": "Move up",
   "sidebar.recent.moveDown": "Move down",
@@ -855,6 +877,9 @@ export const dict = {
   "settings.experimental.row.foldUserMessages.title": "Fold long messages",
   "settings.experimental.row.foldUserMessages.description":
     "Fold your messages past 12 lines behind a Read more button",
+  "settings.experimental.row.newTimeline.title": "New timeline",
+  "settings.experimental.row.newTimeline.description":
+    "A redesigned session timeline that groups what the agent did, with one status line below the turn",
   "settings.experimental.row.newQuestionUI.title": "New question UI",
   "settings.experimental.row.newQuestionUI.description": "Preview the keyboard-first question dock",
   "settings.experimental.row.sidebarOrganize.title": "Organize vertical sidebar",
