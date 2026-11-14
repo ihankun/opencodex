@@ -24,7 +24,6 @@ import {
 } from '../../components/Icons'
 import { useIsMobile } from '../../hooks'
 import { useChatViewport } from '../chat/chatViewport'
-import { isElectron, getDesktopPlatform } from '../../utils/platform'
 import { SettingsSearch } from './SettingsSearch'
 import { SETTINGS_SEARCH_DEFINITIONS, type SettingsSearchItem } from './settingsSearchCatalog'
 import { setSettingsTab, useSettingsTab } from '../../store/settingsStore'
@@ -409,10 +408,8 @@ export function SettingsPage({ onBack }: { onBack: () => void }) {
       <div className="settings-surface settings-mobile-surface flex min-h-0 flex-1 flex-col">
         {/* Sticky Header + Tabs */}
         <div className="shrink-0">
-          {/* macOS 红绿灯区域（与主界面侧边栏一致） */}
-          {!(isElectron() && getDesktopPlatform() === 'windows') && (
-            <div className="mobile-safe-topbar-14 window-drag-region shrink-0" />
-          )}
+          {/* Window chrome floats over the top-left corner; keep the back button and tabs clear of it. */}
+          <div className="mobile-safe-topbar-14 window-drag-region shrink-0" />
           {/* Title bar */}
           <div className="flex items-center justify-between gap-2 px-4 pt-3 pb-2">
             <button type="button" onClick={onBack} className="flex items-center gap-1 rounded-md p-1 text-text-400 hover:bg-bg-100 hover:text-text-200" aria-label={t('backToWorkspace')}>
@@ -484,10 +481,8 @@ export function SettingsPage({ onBack }: { onBack: () => void }) {
         style={{ width: layout.sidebar.openWidth }}
         onKeyDown={handleTabKeyDown}
       >
-        {/* macOS 红绿灯区域（与主界面侧边栏一致） */}
-        {!(isElectron() && getDesktopPlatform() === 'windows') && (
-          <div className="mobile-safe-topbar-14 window-drag-region shrink-0" />
-        )}
+        {/* Window chrome floats over the top-left corner; keep the back button clear of it. */}
+        <div className="mobile-safe-topbar-14 window-drag-region shrink-0" />
         {/* 返回工作区 - 固定不随滚动 */}
         <div className="shrink-0 px-2 xl:px-2.5 pb-3">
           <div className="px-2.5 xl:px-3">{backButton}</div>

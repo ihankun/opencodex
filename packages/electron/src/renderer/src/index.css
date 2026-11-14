@@ -203,18 +203,17 @@ html.electron-app[data-theme-preset='codex'][data-glass] #root {
   top: calc(var(--app-safe-top, 0px) + 0.75rem);
 }
 
+:root[data-platform='windows'] .toast-safe-top {
+  top: calc(var(--window-caption-height, 32px) + 0.75rem);
+}
+
 .command-palette-safe-top {
   padding-top: calc(var(--app-safe-top, 0px) + 15vh);
 }
 
 /* ============================================
- * Desktop Titlebar
+ * Desktop window chrome
  * ============================================ */
-
-.desktop-titlebar {
-  position: relative;
-  -webkit-app-region: no-drag;
-}
 
 .window-drag-region {
   app-region: drag;
@@ -273,18 +272,20 @@ html.electron-app[data-theme-preset='codex'][data-glass] #root {
 
 .electron-window-controls {
   position: fixed;
-  left: 12px;
-  top: 10px;
+  top: 4px;
+  right: 0;
   z-index: 10001;
   display: flex;
-  align-items: center;
-  gap: 2px;
+  height: 36px;
+  align-items: stretch;
+  app-region: no-drag;
+  -webkit-app-region: no-drag;
 }
 
-.electron-window-controls button {
+.electron-window-control {
   display: flex;
-  width: 28px;
-  height: 28px;
+  width: 46px;
+  height: 36px;
   align-items: center;
   justify-content: center;
   margin: 0;
@@ -292,21 +293,33 @@ html.electron-app[data-theme-preset='codex'][data-glass] #root {
   border: 0;
   border-radius: 0;
   background: transparent;
-  color: hsl(var(--text-400));
   cursor: pointer;
-  transition: background-color 100ms ease, color 100ms ease;
 }
 
-.electron-window-controls button:hover {
-  background: hsl(var(--bg-200) / 0.6);
+.electron-window-control-glyph {
+  display: flex;
+  width: 32px;
+  height: 32px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  color: hsl(var(--text-400));
+  transition:
+    background-color 150ms ease,
+    color 150ms ease,
+    transform 100ms ease;
+}
+
+.electron-window-control:hover .electron-window-control-glyph {
+  background: hsl(var(--bg-200) / 0.5);
   color: hsl(var(--text-100));
 }
 
-.electron-window-controls button:active {
-  background: hsl(var(--bg-300) / 0.6);
+.electron-window-control:active .electron-window-control-glyph {
+  transform: scale(0.9);
 }
 
-.electron-window-controls .electron-window-close:hover {
+.electron-window-control-close:hover .electron-window-control-glyph {
   background: hsl(var(--danger-100));
   color: hsl(var(--always-white));
 }
@@ -413,45 +426,15 @@ html.electron-app[data-theme-preset='codex'][data-glass] #root {
   cursor: default;
 }
 
-:root:not([data-platform='windows']) [data-sidebar-expanded='false'] [data-chat-header='true'] {
+[data-sidebar-expanded='false'] [data-chat-header='true'] {
   padding-left: 172px;
 }
 
-/* ============================================
- * Windows Title Bar (Electron)
- * ============================================ */
-
-.electron-windows-titlebar {
-  background-color: hsl(var(--chat-bg));
-  app-region: drag;
-  -webkit-app-region: drag;
-}
-
-html[data-platform='windows'][data-theme-preset='codex'] .electron-windows-titlebar {
-  background-color: hsl(var(--sidebar-bg));
-  background-image: linear-gradient(
-    to right,
-    transparent 0 var(--sidebar-width, 288px),
-    hsl(var(--text-400) / 0.18) var(--sidebar-width, 288px) 100%
-  );
-  background-size: 100% 1px;
-  background-repeat: no-repeat;
-  background-position: bottom;
-}
-
-html.electron-app[data-theme-preset='codex'][data-glass] .electron-windows-titlebar {
-  background-color: hsl(var(--sidebar-bg));
-  background-image: linear-gradient(
-    to right,
-    transparent 0 var(--sidebar-width, 288px),
-    hsl(var(--text-400) / 0.18) var(--sidebar-width, 288px) 100%
-  );
-  background-size: 100% 1px;
-  background-repeat: no-repeat;
-  background-position: bottom;
-}
-
-.electron-windows-titlebar-btn {
+.electron-new-task {
+  position: fixed;
+  top: 10px;
+  left: 44px;
+  z-index: 10001;
   display: flex;
   width: 28px;
   height: 28px;
@@ -464,6 +447,7 @@ html.electron-app[data-theme-preset='codex'][data-glass] .electron-windows-title
   background: transparent;
   color: hsl(var(--text-400));
   cursor: pointer;
+  pointer-events: auto;
   app-region: no-drag;
   -webkit-app-region: no-drag;
   transition:
@@ -472,54 +456,59 @@ html.electron-app[data-theme-preset='codex'][data-glass] .electron-windows-title
     transform 160ms ease;
 }
 
-.electron-windows-titlebar-btn:hover:not(:disabled) {
-  background: hsl(var(--bg-200) / 0.7);
+.electron-new-task:hover {
+  background: hsl(var(--sidebar-selected-bg, var(--bg-200)) / 0.58);
   color: hsl(var(--text-100));
 }
 
-.electron-windows-titlebar-btn:disabled {
-  opacity: 0.35;
-  cursor: default;
-}
-
-.electron-windows-titlebar-btn:focus-visible {
+.electron-new-task:focus-visible {
   outline: 2px solid hsl(var(--accent-main-100) / 0.55);
   outline-offset: 2px;
 }
 
-.electron-windows-titlebar-btn:active {
+.electron-new-task:active {
   transform: scale(0.98);
 }
 
-.electron-windows-titlebar-ctrl-btn {
-  display: flex;
-  width: 46px;
-  align-items: center;
-  justify-content: center;
-  margin: 0;
-  padding: 0;
-  border: 0;
-  border-radius: 0;
-  background: transparent;
-  color: hsl(var(--text-400));
-  cursor: pointer;
-  transition:
-    background-color 100ms ease,
-    color 100ms ease;
+/* ============================================
+ * Native window chrome (Windows)
+ * ============================================ */
+
+/* The custom caption cluster is three 46px buttons wide; it aligns with the chat header band (4px gutter + 36px). */
+:root[data-platform='windows'] {
+  --window-caption-width: 138px;
+  --window-caption-height: 40px;
 }
 
-.electron-windows-titlebar-ctrl-btn:hover {
-  background: hsl(var(--bg-200) / 0.6);
-  color: hsl(var(--text-100));
+/* Top-right headers sit under the native caption buttons; reserve that area for their actions. */
+:root[data-platform='windows'] .window-caption-inset {
+  padding-right: calc(var(--window-caption-width) + 8px);
 }
 
-.electron-windows-titlebar-ctrl-btn:active {
-  background: hsl(var(--bg-300) / 0.6);
+:root[data-platform='windows'] .app-shell:not([data-right-panel-open='true']) [data-chat-header='true'] {
+  padding-right: calc(var(--window-caption-width) + 12px);
 }
 
-.electron-windows-titlebar-close:hover {
-  background: hsl(var(--danger-100));
-  color: hsl(var(--always-white));
+/* Windows has no traffic lights, so the floating cluster starts at the window edge. When the sidebar is
+ * collapsed the extra New Task button shifts search and history one slot right. */
+:root[data-platform='windows'] .electron-sidebar-toggle {
+  left: 12px;
+}
+
+:root[data-platform='windows'] .electron-sidebar-search {
+  left: 44px;
+}
+
+:root[data-platform='windows'] .electron-history-navigation {
+  left: 76px;
+}
+
+:root[data-platform='windows'][data-sidebar-expanded='false'] .electron-sidebar-search {
+  left: 76px;
+}
+
+:root[data-platform='windows'][data-sidebar-expanded='false'] .electron-history-navigation {
+  left: 108px;
 }
 
 /* Windows: sidebar slightly lighter than chat bg in codex dark mode */
@@ -921,10 +910,6 @@ html[data-platform='macos'] [data-chat-header='true'] .rounded-lg > input {
   background-color: hsl(var(--sidebar-bg));
 }
 
-.desktop-titlebar-surface {
-  background-color: hsl(var(--bg-100));
-}
-
 html.electron-app[data-theme-preset='codex'][data-glass] .app-shell {
   background-color: transparent;
 }
@@ -950,29 +935,6 @@ html.electron-app[data-theme-preset='codex'][data-glass] .app-shell {
     background-color: hsl(0 0% 8% / 0.32);
   }
 }
-
-html.electron-app[data-theme-preset='codex'][data-glass] .desktop-titlebar-surface {
-  background:
-    linear-gradient(
-      to right,
-      hsl(var(--sidebar-bg) / 0.2) 0 var(--sidebar-width, 288px),
-      hsl(var(--chat-bg)) var(--sidebar-width, 288px) 100%
-    );
-  -webkit-backdrop-filter: blur(34px) saturate(180%);
-  backdrop-filter: blur(34px) saturate(180%);
-}
-
-/* Windows/Linux: opaque titlebar gradient (no vibrancy) */
-html.electron-app[data-theme-preset='codex'][data-platform="windows"][data-glass] .desktop-titlebar-surface,
-html.electron-app[data-theme-preset='codex'][data-platform="linux"][data-glass] .desktop-titlebar-surface {
-  background:
-    linear-gradient(
-      to right,
-      hsl(var(--sidebar-bg)) 0 var(--sidebar-width, 288px),
-      hsl(var(--chat-bg)) var(--sidebar-width, 288px) 100%
-    );
-}
-
 
 :root[data-theme-preset='codex'][data-mode='light'][data-glass] .sidebar-surface {
   background-color: hsl(var(--sidebar-bg) / 0.32);
@@ -1012,8 +974,7 @@ html.electron-app[data-theme-preset='codex'][data-platform="linux"][data-glass] 
   backdrop-filter: blur(40px) saturate(180%);
 }
 
-/* Windows + glass: light mode uses a pale blue sidebar/titlebar background.
- * --sidebar-bg 同时驱动 .sidebar-surface 与 .electron-windows-titlebar 背景。 */
+/* Windows + glass: light mode uses a pale blue sidebar background. */
 :root:root[data-theme-preset='codex'][data-platform='windows'][data-glass][data-mode='light'] {
   --sidebar-bg: 210 24% 95%;
 }

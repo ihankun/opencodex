@@ -40,17 +40,26 @@ const MAX_RATIO = 0.9
 
 interface SplitContainerProps {
   node: PaneNode
-  renderLeaf: (paneId: string, sessionId: string | null) => React.ReactNode
+  renderLeaf: (paneId: string, sessionId: string | null, rightEdge: boolean) => React.ReactNode
   /** When set, the matching leaf is shown fullscreen and siblings are hidden. */
   fullscreenPaneId?: string | null
+  /** Whether this subtree ends at the window's right edge; only the rightmost pane has to clear the caption buttons. */
+  rightEdge?: boolean
 }
 
-export function SplitContainer({ node, renderLeaf, fullscreenPaneId }: SplitContainerProps) {
+export function SplitContainer({ node, renderLeaf, fullscreenPaneId, rightEdge = true }: SplitContainerProps) {
   if (node.type === 'leaf') {
-    return <>{renderLeaf(node.id, node.sessionId)}</>
+    return <>{renderLeaf(node.id, node.sessionId, rightEdge)}</>
   }
 
-  return <SplitNode split={node} renderLeaf={renderLeaf} fullscreenPaneId={fullscreenPaneId} />
+  return (
+    <SplitNode
+      split={node}
+      renderLeaf={renderLeaf}
+      fullscreenPaneId={fullscreenPaneId}
+      rightEdge={rightEdge}
+    />
+  )
 }
 
 // ============================================
@@ -59,8 +68,9 @@ export function SplitContainer({ node, renderLeaf, fullscreenPaneId }: SplitCont
 
 interface SplitNodeProps {
   split: PaneSplit
-  renderLeaf: (paneId: string, sessionId: string | null) => React.ReactNode
+  renderLeaf: (paneId: string, sessionId: string | null, rightEdge: boolean) => React.ReactNode
   fullscreenPaneId?: string | null
+  rightEdge: boolean
 }
 
 /** Build a CSS grid-template value like "49.5fr 6px 50.5fr" */
@@ -69,7 +79,7 @@ function buildGridTemplate(ratio: number): string {
   return `${(r * 100).toFixed(4)}fr ${SPLIT_GAP}px ${((1 - r) * 100).toFixed(4)}fr`
 }
 
-function SplitNode({ split, renderLeaf, fullscreenPaneId }: SplitNodeProps) {
+function SplitNode({ split, renderLeaf, fullscreenPaneId, rightEdge }: SplitNodeProps) {
   const isHorizontal = split.direction === 'horizontal'
   const containerRef = useRef<HTMLDivElement>(null)
   const isFullscreen = !!fullscreenPaneId
@@ -161,10 +171,10 @@ function SplitNode({ split, renderLeaf, fullscreenPaneId }: SplitNodeProps) {
       <div ref={containerRef} className="relative w-full h-full">
         {/* The branch containing the fullscreen pane gets absolute positioning to fill the container */}
         <div className="min-w-0 min-h-0" style={firstHasFs ? fsStyle : hiddenStyle}>
-          <SplitContainer node={split.first} renderLeaf={renderLeaf} fullscreenPaneId={fullscreenPaneId} />
+          <SplitContainer node={split.first} renderLeaf={renderLeaf} fullscreenPaneId={fullscreenPaneId} rightEdge />
         </div>
         <div className="min-w-0 min-h-0" style={secondHasFs ? fsStyle : hiddenStyle}>
-          <SplitContainer node={split.second} renderLeaf={renderLeaf} fullscreenPaneId={fullscreenPaneId} />
+          <SplitContainer node={split.second} renderLeaf={renderLeaf} fullscreenPaneId={fullscreenPaneId} rightEdge />
         </div>
       </div>
     )
@@ -182,7 +192,7 @@ function SplitNode({ split, renderLeaf, fullscreenPaneId }: SplitNodeProps) {
     >
       {/* First child — contain: layout style isolates reflow without clipping ring borders */}
       <div className="min-w-0 min-h-0 relative" style={{ contain: 'layout style' }}>
-        <SplitContainer node={split.first} renderLeaf={renderLeaf} />
+        <SplitContainer node={split.first} renderLeaf={renderLeaf} rightEdge={isHorizontal ? false : rightEdge} />
       </div>
 
       {/* Divider — invisible hit area overlapping the grid gap */}
@@ -198,7 +208,7 @@ function SplitNode({ split, renderLeaf, fullscreenPaneId }: SplitNodeProps) {
 
       {/* Second child */}
       <div className="min-w-0 min-h-0 relative" style={{ contain: 'layout style' }}>
-        <SplitContainer node={split.second} renderLeaf={renderLeaf} />
+        <SplitContainer node={split.second} renderLeaf={renderLeaf} rightEdge={rightEdge} />
       </div>
     </div>
   )

@@ -1508,23 +1508,19 @@ export function SidePanel({
   return (
     <div className="flex flex-col h-full overflow-hidden">
       {/* ===== Header ===== */}
-      {isMobile || !(isElectron() && desktopPlatform === "windows") ? (
-        <div className="mobile-safe-topbar-14 window-drag-region relative shrink-0">
-          {isMobile && (
-            <button
-              type="button"
-              onClick={onOpenSearch}
-              aria-label={t("sidebar.search")}
-              title={t("sidebar.search")}
-              className="window-no-drag absolute bottom-3 right-3 inline-flex h-8 w-8 items-center justify-center rounded-lg text-text-400 transition-colors hover:bg-bg-200/70 hover:text-text-100"
-            >
-              <SearchIcon size={16} />
-            </button>
-          )}
-        </div>
-      ) : (
-        <div className="shrink-0" style={{ height: 8 }} />
-      )}
+      <div className="mobile-safe-topbar-14 window-drag-region relative shrink-0">
+        {isMobile && (
+          <button
+            type="button"
+            onClick={onOpenSearch}
+            aria-label={t("sidebar.search")}
+            title={t("sidebar.search")}
+            className="window-no-drag absolute bottom-3 right-3 inline-flex h-8 w-8 items-center justify-center rounded-lg text-text-400 transition-colors hover:bg-bg-200/70 hover:text-text-100"
+          >
+            <SearchIcon size={16} />
+          </button>
+        )}
+      </div>
 
       {/* ===== Navigation - 图标位置固定 ===== */}
       <div className="mx-2 flex shrink-0 flex-col gap-0">

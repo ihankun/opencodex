@@ -39,6 +39,7 @@ interface PaneHeaderProps {
   sessionId: string | null
   isFocused: boolean
   paneCount: number
+  isRightmostPane?: boolean
   canSplitPane?: boolean
   isPaneFullscreen?: boolean
   showSidebarButton?: boolean
@@ -53,6 +54,7 @@ export function PaneHeader({
   sessionId,
   isFocused,
   paneCount,
+  isRightmostPane = false,
   canSplitPane,
   isPaneFullscreen = false,
   showSidebarButton = false,
@@ -166,7 +168,7 @@ export function PaneHeader({
       ref={headerRef}
       className={`relative mobile-safe-topbar-10 flex items-center justify-between px-2 select-none transition-colors duration-200 shrink-0 z-20 ${
         isDragOver ? 'bg-accent-main-100/10' : 'bg-bg-100'
-      }`}
+      } ${isRightmostPane && !rightPanelOpen ? 'window-caption-inset' : ''}`}
       onClick={onFocus}
       onPointerDown={handlePointerDragStart}
     >

@@ -1,5 +1,5 @@
 import { lazy, Suspense, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
-import type { CSSProperties, ReactNode } from 'react'
+import type { ReactNode } from 'react'
 import { createPortal } from 'react-dom'
 import { useTranslation } from 'react-i18next'
 import { Sidebar } from './features/chat'
@@ -8,10 +8,11 @@ import { SplitContainer } from './features/chat/SplitContainer'
 import type { CommandItem } from './components/CommandPalette'
 import { ToastContainer } from './components/ToastContainer'
 import { DesktopTitlebar } from './components/DesktopTitlebar'
-import { ElectronWindowsTitlebar } from './components/ElectronWindowsTitlebar'
+import { ElectronWindowControls } from './components/ElectronWindowControls'
 import {
   ChevronLeftIcon,
   ChevronRightIcon,
+  CirclePlusIcon,
   LayersIcon,
   PlugIcon,
   PuzzleIcon,
@@ -49,7 +50,7 @@ import { initNotificationSound } from './utils/notificationSoundBridge'
 import { createPtySession } from './api/pty'
 import type { TerminalTab } from './store/layoutStore'
 import { SettingsPage, type SettingsTab } from './features/settings/SettingsDialog'
-import { isElectron, getDesktopPlatform } from './utils/platform'
+import { getDesktopPlatform } from './utils/platform'
 import { InternalDragLayer } from './components/InternalDragLayer'
 import { completeOnboarding, resetOnboarding, shouldShowOnboarding } from './store/onboardingStore'
 import { insertComposerDraft } from './utils/composerDraft'
@@ -132,6 +133,21 @@ function ElectronSidebarSearch({ title, onOpen }: { title: string; onOpen: () =>
   )
 }
 
+function ElectronNewTaskButton({ title, onNewTask }: { title: string; onNewTask: () => void }) {
+  return createPortal(
+    <button
+      type="button"
+      onClick={onNewTask}
+      aria-label={title}
+      title={title}
+      className="electron-new-task window-no-drag"
+    >
+      <CirclePlusIcon size={18} />
+    </button>,
+    document.body,
+  )
+}
+
 interface ElectronHistoryNavigationProps {
   backTitle: string
   forwardTitle: string
@@ -186,6 +202,10 @@ function App() {
   })
   const splitPaneEnabled = canUseSplitPane(chatViewport)
   const showTitlebarSidebarButton = chatViewport.interaction.sidebarBehavior !== 'overlay'
+  // Floating desktop buttons portal into document.body, so their collapsed-state positions read this from <html>.
+  useEffect(() => {
+    document.documentElement.dataset.sidebarExpanded = sidebarExpanded ? 'true' : 'false'
+  }, [sidebarExpanded])
   const paneLayout = usePaneLayout()
   const focusedController = usePaneController(paneLayout.focusedPaneId)
   const paneControllers = usePaneControllers()
@@ -701,12 +721,13 @@ function App() {
   }, [])
 
   const renderPaneLeaf = useCallback(
-    (paneId: string, paneSessionId: string | null) => (
+    (paneId: string, paneSessionId: string | null, rightEdge: boolean) => (
       <ChatPane
         key={paneId}
         paneId={paneId}
         sessionId={paneSessionId}
         isFocused={paneLayout.focusedPaneId === paneId}
+        isRightmostPane={rightEdge}
         paneCount={paneLayout.paneCount}
         displayMode={paneLayout.isSplit && paneLayout.fullscreenPaneId !== paneId ? 'split' : 'single'}
         isPaneFullscreen={paneLayout.fullscreenPaneId === paneId}
@@ -1111,19 +1132,12 @@ function App() {
     handleToggleFocusedPaneFullscreen,
   ])
 
-  const appShellStyle = useMemo(
-    () =>
-      ({
-        '--sidebar-width': `${chatViewport.layout.sidebar.dockedWidth}px`,
-      }) as CSSProperties,
-    [chatViewport.layout.sidebar.dockedWidth],
-  )
   const utilityPageContent = (
     <div className="flex h-full min-h-0 flex-col overflow-hidden bg-bg-100">
       <Suspense fallback={null}>
         {utilityPage === 'tasks' ? <TaskPanel onOpenSession={(sessionID, directory) => handleSelectSession({ id: sessionID, directory })} /> : utilityPage === 'plugins' ? (
           <div className="flex h-full min-h-0 flex-col">
-            <div className="window-drag-region shrink-0 border-b border-border-200/60 px-5 pb-3 pt-2.5">
+            <div className="window-drag-region window-caption-inset shrink-0 border-b border-border-200/60 px-5 pb-3 pt-2.5">
               <div className="mb-2">
                 <div className="text-[length:var(--fs-lg)] font-semibold text-text-100">{t('components:extensionHub.title')}</div>
               </div>
@@ -1161,35 +1175,25 @@ function App() {
     <div
       className="app-shell relative flex h-full flex-col overflow-hidden"
       data-sidebar-expanded={sidebarExpanded ? 'true' : 'false'}
-      style={appShellStyle}
+      data-right-panel-open={rightPanelOpen ? 'true' : 'false'}
     >
       <button type="button" className="skip-to-composer" onClick={() => document.querySelector<HTMLTextAreaElement>('[data-composer-input]')?.focus()}>{t('chat:inputToolbar.skipToComposer')}</button>
       <DesktopTitlebar />
-      {isElectron() && getDesktopPlatform() === 'windows' ? (
-        <ElectronWindowsTitlebar
-          sidebarExpanded={sidebarExpanded}
-          onToggleSidebar={handleToggleSidebar}
-          onNewTask={handleNewSession}
-          onOpenSearch={() => setSessionSearchOpen(true)}
-          sidebarTitle={sidebarExpanded ? t('chat:sidebar.collapseSidebar') : t('chat:sidebar.expandSidebar')}
-          newTaskTitle={t('chat:sidebar.newChat')}
-          searchTitle={t('chat:sidebar.search')}
-          backTitle={t('components:desktopTitlebar.goBack')}
-          forwardTitle={t('components:desktopTitlebar.goForward')}
-          onGoBack={handleGoBack}
-          onGoForward={handleGoForward}
-        />
-      ) : showTitlebarSidebarButton ? (
+      {showTitlebarSidebarButton ? (
         <>
           <ElectronSidebarToggle
             expanded={sidebarExpanded}
             title={sidebarExpanded ? t('chat:sidebar.collapseSidebar') : t('chat:sidebar.expandSidebar')}
             onToggle={handleToggleSidebar}
           />
+          {getDesktopPlatform() === 'windows' && !sidebarExpanded && (
+            <ElectronNewTaskButton title={t('chat:sidebar.newChat')} onNewTask={handleNewSession} />
+          )}
           <ElectronSidebarSearch title={t('chat:sidebar.search')} onOpen={() => setSessionSearchOpen(true)} />
           <ElectronHistoryNavigation backTitle={t('components:desktopTitlebar.goBack')} forwardTitle={t('components:desktopTitlebar.goForward')} onGoBack={handleGoBack} onGoForward={handleGoForward} />
         </>
       ) : null}
+      {getDesktopPlatform() === 'windows' && <ElectronWindowControls />}
       <InternalDragLayer />
       <ChatViewportProvider value={chatViewport}>
         <div className={`relative flex min-h-0 flex-1 ${isMobilePanelLayout ? 'overflow-hidden' : ''}`}>

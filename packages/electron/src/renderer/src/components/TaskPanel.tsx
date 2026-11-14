@@ -192,7 +192,7 @@ export const TaskPanel = memo(function TaskPanel({ onOpenSession }: { onOpenSess
 
   return (
     <div className="flex h-full flex-col bg-bg-100">
-      <div className="window-drag-region flex h-14 shrink-0 items-center justify-between border-b border-border-200/50 px-6">
+      <div className="window-drag-region window-caption-inset flex h-14 shrink-0 items-center justify-between border-b border-border-200/50 px-6">
         <div>
           <h1 className="text-[length:var(--fs-lg)] font-semibold text-text-100">{t('taskPanel.title')}</h1>
         </div>

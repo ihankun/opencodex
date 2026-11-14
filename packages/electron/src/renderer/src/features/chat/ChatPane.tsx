@@ -55,6 +55,8 @@ interface ChatPaneProps {
   paneId: string
   sessionId: string | null
   isFocused: boolean
+  /** True when this pane ends at the window's right edge, where native caption buttons overlay. */
+  isRightmostPane?: boolean
   paneCount: number
   displayMode: 'single' | 'split'
   isPaneFullscreen?: boolean
@@ -142,6 +144,7 @@ export const ChatPane = memo(function ChatPane({
   paneId,
   sessionId,
   isFocused,
+  isRightmostPane = false,
   paneCount,
   displayMode,
   isPaneFullscreen = false,
@@ -1225,6 +1228,7 @@ export const ChatPane = memo(function ChatPane({
             sessionId={routeSessionId}
             isFocused={isFocused}
             paneCount={paneCount}
+            isRightmostPane={isRightmostPane}
             showSidebarButton={showSidebarButton}
             onOpenSidebar={onOpenSidebar}
             onToggleRightPanel={onToggleRightPanel}

@@ -17,7 +17,7 @@
 import { memo, useEffect, useState, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import { DESKTOP_FULLSCREEN_LAYER_Z_INDEX, DESKTOP_TITLEBAR_HEIGHT } from '../constants'
-import { usesCustomDesktopTitlebar } from '../utils/platform'
+import { getDesktopPlatform, usesCustomDesktopTitlebar } from '../utils/platform'
 import { CloseIcon } from './Icons'
 import { ModalShell } from './ui/ModalShell'
 import type { ViewMode } from './DiffViewer'
@@ -60,18 +60,19 @@ export const FullscreenViewer = memo(function FullscreenViewer({
   deferContent = false,
 }: FullscreenViewerProps) {
   const { t } = useTranslation('common')
-  const isDesktopChrome = usesCustomDesktopTitlebar()
+  // macOS keeps the fullscreen layer below the traffic lights; Windows overlays native caption buttons directly.
+  const isMacChrome = usesCustomDesktopTitlebar() && getDesktopPlatform() === 'macos'
 
   return (
     <ModalShell
       isOpen={isOpen}
       onClose={onClose}
       zIndex={zIndex ?? DESKTOP_FULLSCREEN_LAYER_Z_INDEX}
-      style={isDesktopChrome ? { top: `calc(var(--safe-area-inset-top) + ${DESKTOP_TITLEBAR_HEIGHT}px)` } : undefined}
+      style={isMacChrome ? { top: `calc(var(--safe-area-inset-top) + ${DESKTOP_TITLEBAR_HEIGHT}px)` } : undefined}
     >
       <div className="w-full h-full flex flex-col bg-bg-100">
         {showHeader && (
-          <div data-testid="fullscreen-viewer-header" className="flex items-center h-11 px-4 border-b border-border-100/40 shrink-0 gap-3">
+          <div data-testid="fullscreen-viewer-header" className="window-caption-inset window-drag-region flex items-center h-11 px-4 border-b border-border-100/40 shrink-0 gap-3">
             {/* Left: title area */}
             <div className="flex items-center gap-3 min-w-0 flex-1">
               {title &&
