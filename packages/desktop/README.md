@@ -1,6 +1,6 @@
-# OpenCode Desktop
+# OpenCodex Desktop
 
-The OpenCode Desktop app, built with Electron.
+The OpenCodex Desktop app, built with Electron.
 
 ## Development
 
@@ -12,11 +12,25 @@ bun dev
 ## Build
 
 `bun run build` prepares `resources/` (icons, metainfo and the bundled CLI) and builds the app into `out/`.
-`bun run pack` then packages it, unsigned, into `dist/desktop/` at the repository root: a `.app` tarball on macOS,
-the unpacked app on Windows, and AppImage/deb/rpm on Linux. The release workflow signs and notarizes afterwards.
+`bun run pack` then packages it, unsigned, for the release workflow to sign: a `.app` tarball on macOS,
+the unpacked app on Windows, and AppImage/deb/rpm on Linux. `bun run package` runs both and builds the platform
+installer instead: an NSIS `.exe` on Windows, `.dmg` + `.zip` on macOS, and AppImage/deb/rpm on Linux, all in
+`dist/desktop/` at the repository root. `bun run package` defaults to the prod channel (OpenCodex identity and
+icon); set `OPENCODE_CHANNEL=dev` or `beta` for the other identities.
 
 ```bash
+# Signed-app inputs for the release workflow (unsigned here).
 bun run build && bun run pack
+
+# Local installers, unsigned.
+bun run package
+```
+
+Packaging bundles `packages/cli/dist/<target>`, so build the CLI for the same channel when it is missing. A `local`
+channel build registers `service-local.json`, which the desktop does not read:
+
+```bash
+OPENCODE_CHANNEL=latest OPENCODE_VERSION=2.3.0 bun run --cwd packages/cli build --single --baseline
 ```
 
 Both read the same environment as every other release package:
@@ -36,10 +50,10 @@ default. `bun dev --download-server <version>` instead downloads that CLI versio
 
 ## Beta channel
 
-Every push to the `beta` branch publishes OpenCode Beta (`ai.opencode.desktop.beta`) as version `0.0.0-beta-<run>` to
+Every push to the `beta` branch publishes OpenCodex Beta (`ai.opencodex.desktop.beta`) as version `0.0.0-beta-<run>` to
 the `beta` update channel. Beta publishes only the desktop app; the CLI and SDK packages ship
-from `dev`. Install it from `https://opencode.ai/update/api/beta/desktop/opencode/<asset>`, for example
-`opencode-desktop-mac-arm64.dmg` or `opencode-desktop-win-x64.exe`. Installed builds update in place on every platform.
+from `dev`. Packaged builds update from the GitHub Releases feed at `ihankun/opencodex`, for example
+`opencodex-mac-arm64.dmg` or `opencodex-win-x64.exe`. Installed builds update in place on every platform.
 
 ## Startup benchmark
 
@@ -59,11 +73,11 @@ and `SENTRY_*` environment removed), so it never touches the developer's app, pr
 ```bash
 # A returning user's launches of two packaged builds (pack each with OPENCODE_CHANNEL=beta or prod), or two installed
 # channels.
-strobe bench perf/startup.bench.ts --target desktop --base exe:<old>/OpenCode.exe --head exe:<new>/OpenCode.exe
-strobe bench perf/startup.bench.ts --target desktop --base app:opencode --head app:opencode-beta
+strobe bench perf/startup.bench.ts --target desktop --base exe:<old>/OpenCodex.exe --head exe:<new>/OpenCodex.exe
+strobe bench perf/startup.bench.ts --target desktop --base app:opencodex --head app:opencodex-beta
 
 # The first launch after an install.
-strobe bench perf/startup.bench.ts --target install --base app:opencode --head app:opencode-beta
+strobe bench perf/startup.bench.ts --target install --base app:opencodex --head app:opencodex-beta
 
 # The dev loop's cold start, dev against this checkout.
 strobe bench perf/startup.bench.ts --target dev --base origin/dev --head .
@@ -82,6 +96,6 @@ returning-user cases keep the GPU shader caches their build compiled in earlier 
 them; `first launch` starts each launch without them. `--why always` adds a profiled
 launch per build: the main process and the renderer, both from their first statement.
 
-A packaged beta or prod build registers itself as the `opencode://` handler when it starts, even from the bench; the
+A packaged beta or prod build registers itself as the `opencodex://` handler when it starts, even from the bench; the
 installed app takes the registration back on its next launch. Those channels run with `HTTPS_PROXY` pointed at a
 closed port (`--offline` forces it for dev) so the updater's first check fails fast instead of reaching GitHub.

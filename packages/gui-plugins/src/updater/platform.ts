@@ -25,7 +25,8 @@ export const make = Effect.fn("Updater.platform")(function* (channel: string) {
   updateClient.channel = "latest"
   updateClient.requestHeaders = { "User-Agent": userAgent }
   updateClient.allowPrerelease = false
-  updateClient.allowDowngrade = true
+  // The fork's release feed can still contain older builds; never replace a newer install with one.
+  updateClient.allowDowngrade = false
   updateClient.autoDownload = false
   updateClient.autoInstallOnAppQuit = process.platform === "darwin"
   yield* Effect.logInfo("auto updater configured", {

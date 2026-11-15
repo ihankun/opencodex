@@ -63,6 +63,8 @@ LangString appCannotBeClosed \${LANG_ENGLISH} "cannot close"
 !define APP_64 "${path.join(dir, "app.7z")}"
 !define APP_64_HASH "${payloadHash}"
 !define APP_64_UNPACKED_SIZE 1
+; The shared-directory migration is a one-click path; the tests exercise that branch.
+!define ONE_CLICK
 !include "${config.nsis?.include}"
 Section
 ${section}

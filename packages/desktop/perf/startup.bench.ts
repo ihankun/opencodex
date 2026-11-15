@@ -53,13 +53,13 @@ const dev = {
 export default bench({
   targets: {
     // The installed app by its strobe.json profile. Compare two packaged builds with
-    // `--base exe:<path> --head exe:<path>`, or channels with `--base app:opencode-beta`.
+    // `--base exe:<path> --head exe:<path>`, or channels with `--base app:opencodex-beta`.
     // Launches keep the GPU shader caches earlier launches of the same build compiled (strobe's `gpuCache: "warm"`),
     // as a returning user's machine has them.
-    desktop: app("opencode"),
+    desktop: app("opencodex"),
     // Right after an install the driver and Chromium have compiled none of the app's shaders: every launch starts
     // with empty GPU shader caches.
-    install: app("opencode", { gpuCache: "cold" }),
+    install: app("opencodex", { gpuCache: "cold" }),
     // A contributor's `bun dev:desktop` in each variant's checkout, isolated under the launch's home.
     dev: command("bun dev:desktop", {
       unset: ["OPENCODE_*", "OTEL_*", "SENTRY_*"],
@@ -153,10 +153,10 @@ function skipOnboarding(ctx: LaunchContext<unknown>) {
   const name = basename(ctx.exe!, ".exe")
 
   const id = /beta/i.test(name)
-    ? "ai.opencode.desktop.beta"
+    ? "ai.opencodex.desktop.beta"
     : /dev/i.test(name)
-      ? "ai.opencode.desktop.dev"
-      : "ai.opencode.desktop"
+      ? "ai.opencodex.desktop.dev"
+      : "ai.opencodex.desktop"
 
   const file = join(ctx.home!, "AppData", "Roaming", id, "opencode.settings")
   const settings = existsSync(file) ? JSON.parse(readFileSync(file, "utf8")) : {}

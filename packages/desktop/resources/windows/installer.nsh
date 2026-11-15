@@ -1,5 +1,5 @@
 ; electron-builder names a one-click per-user install directory after the package name, which every
-; channel shares, so OpenCode, OpenCode Beta and OpenCode Dev all installed into one "@opencodedesktop"
+; channel shares, so OpenCodex, OpenCodex Beta and OpenCodex Dev all installed into one "@opencodedesktop"
 ; directory and each channel's installer and uninstaller replaced or deleted the others' files.
 ; Each channel now installs into a directory named after its app ID, like its data directory.
 ; Only the installer moves, and NSIS rejects a variable that the uninstaller build never sets.
@@ -9,20 +9,25 @@
 
 !macro customInit
   StrCpy $sharedInstallDir ""
-  ${StdUtils.GetParentPath} $R0 $INSTDIR
-  ${If} $INSTDIR == "$R0\${APP_FILENAME}"
-    ${If} ${FileExists} "$INSTDIR\${APP_EXECUTABLE_FILENAME}"
-      StrCpy $sharedInstallDir $INSTDIR
-      ; The old uninstaller would delete every channel's files from the shared directory, so the
-      ; install skips it and removes only this channel's files afterwards. The install writes the
-      ; uninstall entry again for the new directory.
-      DeleteRegValue SHELL_CONTEXT "${UNINSTALL_REGISTRY_KEY}" UninstallString
-      !ifdef UNINSTALL_REGISTRY_KEY_2
-        DeleteRegValue SHELL_CONTEXT "${UNINSTALL_REGISTRY_KEY_2}" UninstallString
-      !endif
+  ; An assisted install shows the directory page and electron-builder already defaults it to the
+  ; product directory. Moving it here would make instFilesPre append the product folder a second
+  ; time, so the shared-directory migration only applies to one-click installs.
+  !ifdef ONE_CLICK
+    ${StdUtils.GetParentPath} $R0 $INSTDIR
+    ${If} $INSTDIR == "$R0\${APP_FILENAME}"
+      ${If} ${FileExists} "$INSTDIR\${APP_EXECUTABLE_FILENAME}"
+        StrCpy $sharedInstallDir $INSTDIR
+        ; The old uninstaller would delete every channel's files from the shared directory, so the
+        ; install skips it and removes only this channel's files afterwards. The install writes the
+        ; uninstall entry again for the new directory.
+        DeleteRegValue SHELL_CONTEXT "${UNINSTALL_REGISTRY_KEY}" UninstallString
+        !ifdef UNINSTALL_REGISTRY_KEY_2
+          DeleteRegValue SHELL_CONTEXT "${UNINSTALL_REGISTRY_KEY_2}" UninstallString
+        !endif
+      ${EndIf}
+      StrCpy $INSTDIR "$R0\${APP_ID}"
     ${EndIf}
-    StrCpy $INSTDIR "$R0\${APP_ID}"
-  ${EndIf}
+  !endif
 !macroend
 
 !macro customInstall

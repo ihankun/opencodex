@@ -9,6 +9,7 @@ import {
   WindowZoomChanged,
 } from "../../shared/ipc-rpc/events"
 import { emitIpcEvent } from "../ipc-events"
+import { APP_NAME } from "../constants"
 import type { DesktopPaths } from "../paths"
 import { BACKGROUND_COLOR_KEY, PINCH_ZOOM_ENABLED_KEY, ZOOM_LEVEL_KEY } from "../storage/keys"
 import { getStore } from "../storage/store"
@@ -26,7 +27,7 @@ let backgroundColor: string | undefined
 
 export function windowAppearance(path: Path.Path, paths: DesktopPaths.Resolved) {
   return {
-    title: "OpenCode",
+    title: APP_NAME,
     icon: iconPath(path, paths),
     backgroundColor: backgroundColor ?? storedBackgroundColor(),
     ...platformFrame(tone(), storedZoomLevel()),
