@@ -70,6 +70,6 @@
 /* The tab, project, and close glyphs carry their own muted icon tokens; override the glyphs themselves. */
 :root[data-window-effect]
   :is([data-slot="vertical-tabs-mount"], [data-slot="titlebar-v2"])
-  [data-slot="icon-svg"] {
+  :is([data-slot="icon-svg"], [data-slot="tab-icon-face"]) {
   color: var(--window-effect-chrome);
 }
