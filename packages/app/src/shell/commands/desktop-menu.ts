@@ -73,6 +73,11 @@ export function nextDesktopZoomLevel(factor: number, direction: "in" | "out"): D
   return desktopZoomLevels.findLast((level) => level < factor - 0.01) ?? desktopZoomLevels[0]
 }
 
+// Native window materials. Windows offers acrylic and mica; macOS has one sidebar vibrancy mode.
+export const windowEffects = ["off", "acrylic", "mica", "on"] as const
+
+export type WindowEffect = (typeof windowEffects)[number]
+
 export type DesktopMenu = {
   id: string
   labelKey: DesktopNativeKey

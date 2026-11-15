@@ -13,11 +13,13 @@ import { windowArguments } from "./bootstrap"
 import {
   getBackgroundColor,
   getPinchZoomEnabled,
+  getWindowEffect,
   setBackgroundColor,
   setDockIcon,
   setPinchZoomEnabled,
   setTitlebar,
   setTrafficLightsPosition,
+  setWindowEffect,
   setZoomLevel,
   updateTitlebar,
   windowAppearance,
@@ -52,6 +54,7 @@ const opened = new Set<(win: BrowserWindow, id: string) => void>()
 export {
   getBackgroundColor,
   getPinchZoomEnabled,
+  getWindowEffect,
   registerRendererProtocol,
   setProtocolReporter,
   setBackgroundColor,
@@ -59,6 +62,7 @@ export {
   setPinchZoomEnabled,
   setTitlebar,
   setTrafficLightsPosition,
+  setWindowEffect,
   setZoomLevel,
   updateTitlebar,
 }

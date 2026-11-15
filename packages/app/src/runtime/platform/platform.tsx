@@ -1,7 +1,7 @@
 import { createSimpleContext } from "@opencode/ui/context"
 import type { AsyncStorage, SyncStorage } from "@solid-primitives/storage"
 import type { Accessor } from "solid-js"
-import type { DesktopMenuAction, DesktopZoomLevel } from "@/shell/commands/desktop-menu"
+import type { DesktopMenuAction, DesktopZoomLevel, WindowEffect } from "@/shell/commands/desktop-menu"
 import type { DraftStore } from "@/runtime/persistence/drafts"
 import type { Bridge } from "@opencode/plugin/gui/host"
 
@@ -95,6 +95,15 @@ type PlatformBase = {
 
   /** Save an interface zoom level and apply it to every window (desktop only) */
   setZoomLevel?(level: DesktopZoomLevel): Promise<void>
+
+  /** The native window effect the desktop applies; absent when the host cannot show one. */
+  windowEffect?: Accessor<WindowEffect>
+
+  /** The effects this host supports, in display order; empty or absent hides the setting. */
+  windowEffectOptions?: readonly WindowEffect[]
+
+  /** Save a window effect and apply it to every window (desktop only) */
+  setWindowEffect?(effect: WindowEffect): Promise<void>
 
   /** Whether the native desktop window is fullscreen */
   windowFullscreen?: Accessor<boolean>

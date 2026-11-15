@@ -348,9 +348,10 @@ export const { use: useSettings, provider: SettingsProvider } = createSimpleCont
   gate: false,
   init: () => {
     const [store, setStore, , ready] = persisted({ key: "settings.v3" }, settingsPersistence, defaultSettings)
+    const platform = usePlatform()
 
     const sidebarOrganizeOptions: SidebarOrganize[] = recentSessionsAvailable(
-      usePlatform().platform,
+      platform.platform,
       import.meta.env.VITE_OPENCODE_CHANNEL,
     )
       ? ["list", "projects", "customize", "recent"]
@@ -383,6 +384,15 @@ export const { use: useSettings, provider: SettingsProvider } = createSimpleCont
       if (typeof document === "undefined") return
       const reduce = reduceMotion() === "system" ? systemReducedMotion() : reduceMotion() === "on"
       document.documentElement.dataset.motion = reduce ? "reduce" : "full"
+    })
+
+    // Window chrome reads this attribute to let a native material show through the sidebar and titlebar.
+    createEffect(() => {
+      if (typeof document === "undefined") return
+      const effect = platform.windowEffect?.() ?? "off"
+
+      if (effect === "off") delete document.documentElement.dataset.windowEffect
+      else document.documentElement.dataset.windowEffect = effect
     })
 
     const timelineWidth = withFallback(() => store.general?.timelineWidth, defaultSettings.general.timelineWidth)

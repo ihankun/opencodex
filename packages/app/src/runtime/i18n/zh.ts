@@ -868,6 +868,12 @@ export const dict = {
   "workspace.delete.confirm": "删除“{{name}}”吗？",
   "workspace.delete.location": "位置",
   "settings.search.empty.query": "“{{query}}”",
+  "settings.appearance.row.windowEffects.title": "窗口特效",
+  "settings.appearance.row.windowEffects.description": "在侧边栏和标题栏显示系统材质",
+  "settings.appearance.row.windowEffects.off": "关",
+  "settings.appearance.row.windowEffects.acrylic": "亚克力",
+  "settings.appearance.row.windowEffects.mica": "云母",
+  "settings.appearance.row.windowEffects.on": "开",
 } satisfies Partial<Record<Keys, string>>
 
 export default dict

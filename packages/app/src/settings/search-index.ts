@@ -24,6 +24,8 @@ export function settingsSearchIndex(input: {
   desktop: boolean
   browser: boolean
   mobile: boolean
+  /** Whether the desktop host can apply a native window effect. */
+  windowEffects?: boolean
   translate: ReturnType<typeof useLanguage>["t"]
   plugins?: readonly SettingsSearchPlugin[]
 }) {
@@ -97,6 +99,8 @@ export function settingsSearchIndex(input: {
     if (entry.available === "browser" && !input.browser) return
 
     if (entry.available === "mobile" && !input.mobile) return
+
+    if (entry.requires === "window-effects" && !input.windowEffects) return
     add(entry, { type: "root", tab: entry.tab, target: entry.target }, "")
   })
   plugins.forEach((item) => {

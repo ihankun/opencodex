@@ -6,6 +6,7 @@ import { Predicate } from "effect"
 import oc2ThemeJson from "../../../../ui/src/theme/themes/oc-2.json"
 import { BACKGROUND_COLOR_KEY, ZOOM_LEVEL_KEY } from "../storage/keys"
 import { getStore } from "../storage/store"
+import { storedWindowEffect } from "./effect"
 
 // Frame defaults shared by the early window (created on ready, before the renderer exists) and the
 // full window setup in appearance.ts, so both draw the same frame.
@@ -39,6 +40,11 @@ export function savedBackgroundColor() {
   return Predicate.isString(stored) ? stored : undefined
 }
 
+// A material shows through the web contents, so the window itself must not paint an opaque layer.
+export function windowBackgroundColor() {
+  return storedWindowEffect() === "off" ? storedBackgroundColor() : "#00000000"
+}
+
 // The zoom level chosen in settings or with Zoom In and Zoom Out, or 100% when none was saved.
 export function storedZoomLevel() {
   const stored = getStore().get(ZOOM_LEVEL_KEY)
@@ -57,16 +63,24 @@ export function titlebarOverlay(mode: "light" | "dark" = tone(), zoom = 1) {
 // macOS and Windows hide the titlebar; Windows draws its window controls in an overlay sized to the zoom.
 export function platformFrame(mode: "light" | "dark", zoom: number) {
   const frame: BrowserWindowConstructorOptions = {}
+  const effect = storedWindowEffect()
 
   if (process.platform === "darwin") {
     frame.titleBarStyle = "hidden"
     frame.trafficLightPosition = { x: 14, y: 14 }
+
+    if (effect !== "off") {
+      frame.vibrancy = "sidebar"
+      frame.visualEffectState = "active"
+    }
   }
 
   if (process.platform === "win32") {
     frame.frame = false
     frame.titleBarStyle = "hidden"
     frame.titleBarOverlay = titlebarOverlay(mode, zoom)
+
+    if (effect === "acrylic" || effect === "mica") frame.backgroundMaterial = effect
   }
 
   return frame

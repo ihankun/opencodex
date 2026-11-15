@@ -4,9 +4,11 @@ import { WindowRpcs } from "../../shared/ipc-rpc"
 import { IpcPortHandoff } from "../ipc-transport"
 import {
   getPinchZoomEnabled,
+  getWindowEffect,
   setPinchZoomEnabled,
   setTitlebar,
   setTrafficLightsPosition,
+  setWindowEffect,
   setWindowThemeReady,
   setZoomLevel,
   updateTitlebar,
@@ -56,6 +58,8 @@ export const windowHandlers = WindowRpcs.toLayer(
       WindowSetZoomLevel: ({ level }) => Effect.sync(() => setZoomLevel(level)),
       WindowGetPinchZoomEnabled: () => Effect.sync(getPinchZoomEnabled),
       WindowSetPinchZoomEnabled: ({ enabled }) => Effect.sync(() => setPinchZoomEnabled(enabled)),
+      WindowGetWindowEffect: () => Effect.sync(getWindowEffect),
+      WindowSetWindowEffect: ({ effect }) => Effect.sync(() => setWindowEffect(effect)),
       WindowSetTitlebar: ({ theme }, context) =>
         Effect.sync(() => {
           const win = BrowserWindow.fromWebContents(sender(handoff, context))

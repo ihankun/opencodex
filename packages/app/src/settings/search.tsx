@@ -276,6 +276,7 @@ export function createSettingsSearchCatalog() {
       desktop: platform.platform === "desktop",
       browser: platform.platform === "desktop",
       mobile: mobile(),
+      windowEffects: (platform.windowEffectOptions?.length ?? 0) > 0,
       translate: language.t,
       plugins: surface.plugins.items(),
     }),

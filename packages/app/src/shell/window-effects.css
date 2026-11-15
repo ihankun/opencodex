@@ -1,0 +1,75 @@
+/* The window paints a native material; these surfaces must stay transparent for it to show through. */
+:root[data-window-effect] {
+  background-color: transparent !important;
+}
+
+/* Only the session surfaces keep their own background; the chrome and its gutters show the material. */
+:root[data-window-effect] [data-slot="shell"],
+:root[data-window-effect] [data-slot="shell-main"] {
+  background-color: transparent;
+}
+
+:root[data-window-effect] [data-slot="vertical-tabs-mount"],
+:root[data-window-effect] [data-slot="vertical-tabs-peek-surface"] {
+  background-color: transparent;
+}
+
+/* Sidebar rows and titlebar tabs sit directly on the material instead of on their own opaque tiles. */
+:root[data-window-effect] [data-titlebar-tab],
+:root[data-window-effect] [data-titlebar-tab-action] {
+  --tab-base: transparent;
+}
+
+/* Windows shows the material behind its titlebar; macOS keeps the titlebar opaque. */
+:root:is([data-window-effect="acrylic"], [data-window-effect="mica"]) [data-slot="titlebar-v2"] {
+  background-color: transparent;
+}
+
+/* The chrome's copy follows the resolved color scheme: white on dark materials, black on light ones. */
+:root[data-color-scheme="dark"][data-window-effect] {
+  --window-effect-chrome: #fff;
+}
+
+:root[data-color-scheme="light"][data-window-effect] {
+  --window-effect-chrome: #000;
+}
+
+:root[data-window-effect] [data-slot="vertical-tabs-mount"] :is(
+    .text-v2-text-text-faint,
+    .text-v2-text-text-muted,
+    .text-v2-text-text-base
+  ),
+:root[data-window-effect] [data-slot="vertical-tabs-mount"] :is(
+    [data-titlebar-tab-action],
+    [data-slot="tab-link"],
+    [data-slot="tab-project"]
+  ) {
+  color: var(--window-effect-chrome);
+}
+
+/* The same for the top titlebar: its actions, icons, and horizontal tab labels. */
+:root[data-window-effect] [data-slot="titlebar-v2"] :is(
+    .text-v2-text-text-faint,
+    .text-v2-text-text-muted,
+    .text-v2-text-text-base
+  ),
+:root[data-window-effect] [data-slot="titlebar-v2"] :is(
+    [data-titlebar-tab-action],
+    [data-slot="tab-link"],
+    [data-slot="tab-title"],
+    [data-slot="tab-project"]
+  ) {
+  color: var(--window-effect-chrome);
+}
+
+:root[data-window-effect] [data-slot="titlebar-v2"]
+  [data-component="icon-button-v2"]:is([data-variant="ghost"], [data-variant="ghost-muted"]) {
+  color: var(--window-effect-chrome);
+}
+
+/* The tab, project, and close glyphs carry their own muted icon tokens; override the glyphs themselves. */
+:root[data-window-effect]
+  :is([data-slot="vertical-tabs-mount"], [data-slot="titlebar-v2"])
+  [data-slot="icon-svg"] {
+  color: var(--window-effect-chrome);
+}

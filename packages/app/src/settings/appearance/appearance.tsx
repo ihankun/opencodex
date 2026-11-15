@@ -153,6 +153,26 @@ export const SettingsAppearance: Component = () => {
               </SettingsRow>
             </Show>
 
+            <Show when={appearance.windowEffects.available()}>
+              <SettingsRow
+                title={language.t("settings.appearance.row.windowEffects.title")}
+                description={language.t("settings.appearance.row.windowEffects.description")}
+              >
+                <Select
+                  data-action="settings-window-effects"
+                  options={appearance.windowEffects.options}
+                  current={appearance.windowEffects.options.find(
+                    (effect) => effect === appearance.windowEffects.current(),
+                  )}
+                  placement="bottom-end"
+                  gutter={6}
+                  value={(effect) => effect}
+                  label={appearance.windowEffects.label}
+                  onSelect={(effect) => effect && appearance.windowEffects.select(effect)}
+                />
+              </SettingsRow>
+            </Show>
+
             <SettingsRow
               title={language.t("settings.appearance.row.reduceMotion.title")}
               description={language.t("settings.appearance.row.reduceMotion.description")}

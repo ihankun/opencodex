@@ -1,4 +1,4 @@
-import type { DesktopMenuAction, DesktopZoomLevel } from "@opencode/app/desktop-menu"
+import type { DesktopMenuAction, DesktopZoomLevel, WindowEffect } from "@opencode/app/desktop-menu"
 import type { DesktopNativeBundle } from "@opencode/app/i18n/desktop-native"
 import type { StorageSnapshot } from "../shared/ipc-transport"
 import type { WindowBootstrap } from "../shared/window-bootstrap"
@@ -67,6 +67,9 @@ export type ElectronAPI = {
   getPinchZoomEnabled(): Promise<boolean>
   setPinchZoomEnabled(enabled: boolean): Promise<void>
   onPinchZoomEnabledChanged(cb: (enabled: boolean) => void): () => void
+  getWindowEffect(): Promise<WindowEffect>
+  setWindowEffect(effect: WindowEffect): Promise<void>
+  onWindowEffectChanged(cb: (effect: WindowEffect) => void): () => void
   getZoomLevel(): Promise<DesktopZoomLevel>
   setZoomLevel(level: DesktopZoomLevel): Promise<void>
   onZoomChanged(cb: (zoom: { factor: number; level: DesktopZoomLevel }) => void): () => void

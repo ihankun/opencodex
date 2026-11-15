@@ -1,4 +1,4 @@
-import { desktopZoomLevels } from "@opencode/app/desktop-menu"
+import { desktopZoomLevels, windowEffects } from "@opencode/app/desktop-menu"
 import { Schema } from "effect"
 import { Rpc, RpcGroup } from "effect/rpc"
 
@@ -36,6 +36,14 @@ export const WindowSetPinchZoomEnabled = Rpc.make("WindowSetPinchZoomEnabled", {
   payload: { enabled: Schema.Boolean },
 })
 
+export const WindowGetWindowEffect = Rpc.make("WindowGetWindowEffect", {
+  success: Schema.Literals(windowEffects),
+})
+
+export const WindowSetWindowEffect = Rpc.make("WindowSetWindowEffect", {
+  payload: { effect: Schema.Literals(windowEffects) },
+})
+
 export const WindowSetTitlebar = Rpc.make("WindowSetTitlebar", {
   payload: {
     theme: Schema.Struct({
@@ -63,6 +71,8 @@ export const WindowRpcs = RpcGroup.make(
   WindowSetZoomLevel,
   WindowGetPinchZoomEnabled,
   WindowSetPinchZoomEnabled,
+  WindowGetWindowEffect,
+  WindowSetWindowEffect,
   WindowSetTitlebar,
   WindowSetTrafficLightsPosition,
 )

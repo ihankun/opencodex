@@ -1,8 +1,9 @@
 import { app, BrowserWindow, nativeImage, nativeTheme } from "electron"
-import type { DesktopZoomLevel } from "@opencode/app/desktop-menu"
+import type { DesktopZoomLevel, WindowEffect } from "@opencode/app/desktop-menu"
 import type { Path } from "effect"
 import { type TitlebarTheme } from "../../shared/ipc-contract"
 import {
+  WindowEffectChanged,
   WindowFocusChanged,
   WindowFullscreenChanged,
   WindowPinchZoomChanged,
@@ -11,9 +12,17 @@ import {
 import { emitIpcEvent } from "../ipc-events"
 import { APP_NAME } from "../constants"
 import type { DesktopPaths } from "../paths"
-import { BACKGROUND_COLOR_KEY, PINCH_ZOOM_ENABLED_KEY, ZOOM_LEVEL_KEY } from "../storage/keys"
+import { BACKGROUND_COLOR_KEY, PINCH_ZOOM_ENABLED_KEY, WINDOW_EFFECT_KEY, ZOOM_LEVEL_KEY } from "../storage/keys"
 import { getStore } from "../storage/store"
-import { platformFrame, savedBackgroundColor, storedBackgroundColor, storedZoomLevel, titlebarOverlay, tone } from "./defaults"
+import {
+  platformFrame,
+  savedBackgroundColor,
+  storedZoomLevel,
+  titlebarOverlay,
+  tone,
+  windowBackgroundColor,
+} from "./defaults"
+import { storedWindowEffect, windowEffectOptionsForHost } from "./effect"
 
 const titlebarThemes = new WeakMap<BrowserWindow, Partial<TitlebarTheme>>()
 
@@ -29,7 +38,7 @@ export function windowAppearance(path: Path.Path, paths: DesktopPaths.Resolved) 
   return {
     title: APP_NAME,
     icon: iconPath(path, paths),
-    backgroundColor: backgroundColor ?? storedBackgroundColor(),
+    backgroundColor: windowBackgroundColor(),
     ...platformFrame(tone(), storedZoomLevel()),
     webPreferences: {
       preload: paths.preloadPath,
@@ -53,7 +62,8 @@ export function setBackgroundColor(color: string) {
   if (getBackgroundColor() !== color) getStore().set(BACKGROUND_COLOR_KEY, color)
   backgroundColor = color
   BrowserWindow.getAllWindows().forEach((win) => {
-    win.setBackgroundColor(color)
+    // A window material needs a transparent window background; the theme colour stays persisted.
+    win.setBackgroundColor(windowBackgroundColor())
 
     if (process.platform === "darwin") win.invalidateShadow()
   })
@@ -61,6 +71,30 @@ export function setBackgroundColor(color: string) {
 
 export function getBackgroundColor() {
   return backgroundColor ?? savedBackgroundColor()
+}
+
+export function getWindowEffect() {
+  return storedWindowEffect()
+}
+
+// Applies the material to every window and tells each renderer so its chrome can go transparent.
+export function setWindowEffect(effect: WindowEffect) {
+  if (!windowEffectOptionsForHost().includes(effect)) return
+
+  if (storedWindowEffect() !== effect) getStore().set(WINDOW_EFFECT_KEY, effect)
+  BrowserWindow.getAllWindows().forEach((win) => {
+    if (process.platform === "win32") {
+      win.setBackgroundMaterial(effect === "acrylic" || effect === "mica" ? effect : "none")
+    }
+
+    if (process.platform === "darwin") {
+      win.setVibrancy(effect === "off" ? null : "sidebar")
+      win.invalidateShadow()
+    }
+
+    win.setBackgroundColor(windowBackgroundColor())
+    emitIpcEvent(win.webContents, new WindowEffectChanged({ effect }))
+  })
 }
 
 export function setTitlebar(win: BrowserWindow, theme: Partial<TitlebarTheme> = {}) {

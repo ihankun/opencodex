@@ -16,7 +16,7 @@ import {
   useSettings,
 } from "@/settings/model"
 import { usePlatform } from "@/runtime/platform/platform"
-import { desktopZoomLevels, type DesktopZoomLevel } from "@/shell/commands/desktop-menu"
+import { desktopZoomLevels, type DesktopZoomLevel, type WindowEffect } from "@/shell/commands/desktop-menu"
 import { playSoundById, SOUND_OPTIONS } from "@/shell/notifications/sound"
 import { createSoundPreviewController } from "./behavior"
 import { ServerConnection } from "@/runtime/server/registry"
@@ -169,6 +169,13 @@ export function createAppearanceSettingsController() {
       current: () => platform.zoomLevel?.() ?? 1,
       label: (level: DesktopZoomLevel) => new Intl.NumberFormat(language.intl(), { style: "percent" }).format(level),
       select: (level: DesktopZoomLevel) => void platform.setZoomLevel?.(level),
+    },
+    windowEffects: {
+      available: () => (platform.windowEffectOptions?.length ?? 0) > 0,
+      options: [...(platform.windowEffectOptions ?? [])],
+      current: () => platform.windowEffect?.() ?? "off",
+      label: (effect: WindowEffect) => language.t(`settings.appearance.row.windowEffects.${effect}`),
+      select: (effect: WindowEffect) => void platform.setWindowEffect?.(effect),
     },
     reduceMotion: {
       current: settings.appearance.reduceMotion,

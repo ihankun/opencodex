@@ -3,6 +3,7 @@ import { Predicate } from "effect"
 import { windowBootstrapArgument, type WindowBootstrap } from "../../shared/window-bootstrap"
 import { FIRST_LAUNCH_ONBOARDING_COMPLETE_KEY } from "../storage/keys"
 import { getStore } from "../storage/store"
+import { storedWindowEffect, windowEffectOptionsForHost } from "./effect"
 
 // The settings store is already in memory when a window is created, so the renderer gets the
 // answers its shell gate would otherwise ask for over IPC. A fresh install has no onboarding
@@ -14,6 +15,7 @@ export function windowBootstrap(id: string): WindowBootstrap {
     id,
     firstLaunchPending: Predicate.isBoolean(complete) ? !complete : undefined,
     packaged: app.isPackaged,
+    windowEffects: { options: windowEffectOptionsForHost(), current: storedWindowEffect() },
   }
 }
 

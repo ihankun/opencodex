@@ -1,3 +1,5 @@
+import type { WindowEffect } from "@opencode/app/desktop-menu"
+
 // What the main process already knows when it creates a window, handed to the renderer through the
 // preload's argv so the shell can mount before the IPC port exists. Undefined means "ask over IPC".
 export type WindowBootstrap = {
@@ -5,6 +7,8 @@ export type WindowBootstrap = {
   firstLaunchPending?: boolean
   /** The app runs packaged (`app.isPackaged`), as plugins' `App.packaged` reports in both processes. */
   packaged?: boolean
+  /** The native materials this host supports and the effect it currently applies. */
+  windowEffects?: { options: readonly WindowEffect[]; current: WindowEffect }
 }
 
 const prefix = "--opencode-window="

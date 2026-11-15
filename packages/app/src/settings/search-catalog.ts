@@ -13,6 +13,7 @@ type Entry<Tab> = {
   section?: Label
   subtab?: "mcps" | "plugins" | "skills" | "lsps"
   available?: "desktop" | "browser" | "mobile"
+  requires?: "window-effects"
 }
 
 export const clientSettings: Entry<SettingsRootTab>[] = [
@@ -170,6 +171,14 @@ export const clientSettings: Entry<SettingsRootTab>[] = [
     target: "settings-zoom",
     keywords: "scale size text font larger bigger accessibility",
     available: "desktop",
+  },
+  {
+    tab: "appearance",
+    label: "settings.appearance.row.windowEffects.title",
+    target: "settings-window-effects",
+    keywords: "window effect acrylic mica blur transparency vibrancy material 窗口 特效 亚克力 云母 模糊 透明",
+    available: "desktop",
+    requires: "window-effects",
   },
   {
     tab: "appearance",

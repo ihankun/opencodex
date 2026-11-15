@@ -1,4 +1,4 @@
-import { desktopZoomLevels } from "@opencode/app/desktop-menu"
+import { desktopZoomLevels, windowEffects } from "@opencode/app/desktop-menu"
 import { Schema } from "effect"
 import { Rpc, RpcGroup } from "effect/rpc"
 import { PluginInstalled, PluginMenubarItem, PluginPayload, PluginGuis } from "./plugins"
@@ -23,6 +23,10 @@ export class WindowFocusChanged extends Schema.TaggedClass<WindowFocusChanged>()
 
 export class WindowPinchZoomChanged extends Schema.TaggedClass<WindowPinchZoomChanged>()("WindowPinchZoomChanged", {
   enabled: Schema.Boolean,
+}) {}
+
+export class WindowEffectChanged extends Schema.TaggedClass<WindowEffectChanged>()("WindowEffectChanged", {
+  effect: Schema.Literals(windowEffects),
 }) {}
 
 // `factor` is the window's live zoom, which a pinch can move off `level`, the saved setting.
@@ -83,6 +87,7 @@ export const DesktopEvent = Schema.Union([
   WindowFullscreenChanged,
   WindowFocusChanged,
   WindowPinchZoomChanged,
+  WindowEffectChanged,
   WindowZoomChanged,
   StorageChanged,
   PluginState,
