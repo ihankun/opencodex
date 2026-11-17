@@ -94,9 +94,8 @@ test.each(channels)("deep links use the OpenCodex scheme for $channel", ({ chann
 
 test.each(channels)("macOS bundle for $channel", ({ channel }) => {
   const config = load(channel)
-  expect(config.mac?.icon).toBe(channel === "prod" ? "resources/icons/icon.icon" : "resources/icons/icon.icns")
-  expect(config.dmg?.icon).toBe(channel === "prod" ? "resources/icons/icon.icns" : undefined)
-  // The prod override must keep the rest of the shared macOS settings.
+  expect(config.mac?.icon).toBe("resources/icons/icon.icns")
+  expect(config.dmg?.icon).toBeUndefined()
   expect(config.mac?.target).toEqual(["dmg", "zip"])
 
   for (const key of [
@@ -108,13 +107,6 @@ test.each(channels)("macOS bundle for $channel", ({ channel }) => {
     "NSRemovableVolumesUsageDescription",
   ])
     expect(config.mac?.extendInfo?.[key], key).toMatch(/\S/)
-})
-
-test("the production Icon Composer package references its bundled artwork", async () => {
-  const icon = await Bun.file(path.join(import.meta.dirname, "icons/prod/icon.icon/icon.json")).json()
-  expect(icon["supported-platforms"]).toEqual({ squares: ["macOS"] })
-  const image = icon.groups[0].layers[0]["image-name"]
-  expect(await Bun.file(path.join(import.meta.dirname, "icons/prod/icon.icon/Assets", image)).exists()).toBe(true)
 })
 
 test("shared packaging defaults", async () => {

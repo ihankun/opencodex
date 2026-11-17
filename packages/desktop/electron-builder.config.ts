@@ -1,4 +1,4 @@
-import { copyFile, readdir, stat } from "node:fs/promises"
+import { readdir, stat } from "node:fs/promises"
 import path from "node:path"
 import { fileURLToPath } from "node:url"
 
@@ -129,11 +129,6 @@ const getBase = (appId: string): Configuration => {
 
       if ((await stat(version)).size === 0) throw new Error(`Bundled CLI version must be a non-empty file: ${version}`)
 
-      // With an Icon Composer mac.icon, electron-builder bundles the ICNS that actool generates as the pre-macOS 26
-      // fallback. That one tops out at 256px and draws a light ring around the squircle, so ship ours instead.
-      if (context.electronPlatformName === "darwin")
-        await copyFile(path.join(packageDir, "resources/icons/icon.icns"), path.join(resources, "icon.icns"))
-
       if (context.electronPlatformName !== "win32") return
 
       const prebuilds = path.join(
@@ -161,6 +156,8 @@ const getBase = (appId: string): Configuration => {
     },
     mac: {
       category: "public.app-category.developer-tools",
+      // This fork ships the ICNS on every channel. The upstream prod-only Icon Composer package needs
+      // actool from Xcode 26 or higher, and macOS 26 falls back to the ICNS when it is absent.
       icon: `resources/icons/icon.icns`,
       extendInfo: {
         NSMicrophoneUsageDescription: DESKTOP_NATIVE_ENGLISH["desktop.microphoneUsage"],
@@ -254,11 +251,6 @@ export function getConfig() {
         appId,
         productName: "OpenCodex",
         protocols: { name: "OpenCodex", schemes: ["opencodex"] },
-        // An Icon Composer package compiles to Assets.car, which macOS 26 and later draw the app icon from
-        // (Dock, Finder, system dialogs and the system icon styles). Older macOS keeps using the ICNS.
-        mac: { ...base.mac, icon: "resources/icons/icon.icon" },
-        // The DMG volume icon would otherwise use the same actool-generated ICNS.
-        dmg: { icon: "resources/icons/icon.icns" },
         publish: PUBLISH,
         deb: { fpm: [metainfoFpm(appId)] },
         rpm: { packageName: "opencodex", fpm: [rpmNoBuildIdLinksFpm, metainfoFpm(appId)] },
