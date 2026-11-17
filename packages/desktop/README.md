@@ -26,8 +26,9 @@ bun run build && bun run pack
 bun run package
 ```
 
-Packaging bundles `packages/cli/dist/<target>`, so build the CLI for the same channel when it is missing. A `local`
-channel build registers `service-local.json`, which the desktop does not read:
+Packaging bundles `packages/cli/dist/<target>`. A prod build whose CLI version differs from the app version is
+rebuilt automatically for the `latest` channel; build it yourself when it is missing. A `local` channel build
+registers `service-local.json`, which the desktop does not read:
 
 ```bash
 OPENCODE_CHANNEL=latest OPENCODE_VERSION=2.3.0 bun run --cwd packages/cli build --single --baseline
