@@ -56,7 +56,10 @@ async function ensureBuiltCliVersion(target: ReturnType<typeof getCurrentCli>) {
 
   const directory = path.join(cli, target.package.replace("@opencode/", ""))
   const built = await manifestVersion(path.join(directory, "package.json"))
-  const expected = process.env.OPENCODE_VERSION ?? (await manifestVersion(path.join(dir, "package.json")))
+  const appVersion = process.env.OPENCODE_VERSION ?? (await manifestVersion(path.join(dir, "package.json")))
+  // The bundled CLI reports the upstream base version. The fork's `-ocx.N` suffix is desktop-only, and
+  // leaking it into the CLI makes the CLI updater treat the same upstream release as newer.
+  const expected = appVersion.split(/[-+]/, 1)[0]
 
   if (built === expected) return
 
