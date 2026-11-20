@@ -21,6 +21,7 @@ import { TabsProvider } from "@/shell/tabs/tabs"
 import { ErrorPage } from "@/shell/errors/error"
 import { AppRoutes, File, preloadRoute } from "@/shell/routes/routes"
 import { PluginRoot } from "@/runtime/plugin/root"
+import { PRODUCT_NAME } from "@/product"
 
 export { preloadRoute }
 
@@ -57,7 +58,7 @@ export function AppBaseProviders(
 ) {
   return (
     <MetaProvider>
-      <Title>OpenCode</Title>
+      <Title>{PRODUCT_NAME}</Title>
       <Font />
       <ThemeProvider onThemeApplied={(mode, scheme) => props.onThemeApplied?.(mode, scheme)}>
         <LanguageProvider locale={props.locale} onNativeTranslations={props.onNativeTranslations}>

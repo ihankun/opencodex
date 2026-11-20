@@ -10,6 +10,7 @@ import {
   type DesktopMenuRole,
 } from "@opencode/app/desktop-menu"
 import { MenuCommandTriggered } from "../../shared/ipc-rpc/events"
+import { APP_NAME } from "../constants"
 import { emitIpcEvent } from "../ipc-events"
 
 import { runDesktopMenuAction } from "./menu-actions"
@@ -101,7 +102,10 @@ export function sendMenuCommand(win: BrowserWindow, id: string) {
 }
 
 function nativeMenu(menu: DesktopMenu, extra: readonly MenubarEntry[], deps: Deps): MenuItemConstructorOptions {
-  if (menu.role && !extra.length) return { role: nativeRole(menu.role), label: nativeT(menu.labelKey) }
+  // Use the channel's product name for the application menu title instead of the translated upstream name.
+  const label = menu.id === "app" ? APP_NAME : nativeT(menu.labelKey)
+
+  if (menu.role && !extra.length) return { role: nativeRole(menu.role), label }
 
   const items = desktopMenuWithPlugins(
     (menu.items ?? [])
@@ -111,7 +115,7 @@ function nativeMenu(menu: DesktopMenu, extra: readonly MenubarEntry[], deps: Dep
   )
 
   const options: MenuItemConstructorOptions = {
-    label: nativeT(menu.labelKey),
+    label,
     submenu: items.map((item) => {
       const entry = item.entry
 

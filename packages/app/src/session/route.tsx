@@ -23,6 +23,7 @@ import { SessionUIProvider } from "@/shell/routes/session-ui-provider"
 import { useTabs, type PendingSession } from "@/shell/tabs/tabs"
 import { requireServerKey } from "@/shell/routes/session"
 import { ErrorPage } from "@/shell/errors/error"
+import { PRODUCT_NAME } from "@/product"
 import { useSessionModel } from "./model"
 import { SessionPanelFrame } from "./session-frame"
 import { SessionIdentityHeader } from "./session-identity-header"
@@ -291,7 +292,7 @@ function SessionDocumentTitle(props: { title: () => string | undefined }) {
   // Keyed: <Title> reads its text inside a meta effect, which would hit a stale Show accessor once the session is deleted.
   return (
     <Show when={props.title()} keyed>
-      {(value) => <Title>{`${value} · OpenCode`}</Title>}
+      {(value) => <Title>{`${value} · ${PRODUCT_NAME}`}</Title>}
     </Show>
   )
 }
