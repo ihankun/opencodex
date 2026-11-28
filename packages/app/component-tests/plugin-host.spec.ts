@@ -11,7 +11,7 @@ import type {
   SessionScreen,
   SetupContext,
 } from "@opencode/plugin/gui"
-import type { BuiltinPanelTab } from "@opencode/plugin/gui/builtin"
+import type { BuiltinContext, BuiltinPanelTab } from "@opencode/plugin/gui/builtin"
 import type { Bridge, BridgeMessage, EnableState, Installed } from "@opencode/plugin/gui/host"
 import type { JSHandle } from "@playwright/test"
 import type { mountCodeBlocks, mountThemes } from "./plugin-host.fixture"
@@ -752,7 +752,7 @@ story(
 
       const read = () => ({
         state: reads.state?.(),
-        font: reads.font?.().startsWith('"JetBrainsMono Nerd Font Mono"') ? "default mono" : reads.font?.(),
+        font: reads.font?.().startsWith('"OpenMono"') ? "default mono" : reads.font?.(),
         prefs: reads.prefs?.value?.count,
         ready: reads.prefs?.ready(),
         writes: [...host.writes],
@@ -1260,6 +1260,34 @@ story(
   },
 )
 
+story("a scoped contract binds the consuming instance, not the plugin that happens to call a saved method", async ({ page }) => {
+  const result = await page.evaluate(async (fixture) => {
+    const { Contract, mountPlugins, until } = await import(fixture)
+    const token: Contract<() => string> = Contract.define("provider.scoped")
+    const reads = new Map<string, () => Live<() => string>>()
+
+    const host = mountPlugins({ definitions: [
+      { id: "provider", windowEntry: async () => ({ default: (ctx: BuiltinContext) =>
+        ctx.provideFor(token, (consumer) => () => consumer) }) },
+      ...["one", "two"].map(id => ({ id, windowEntry: async () => ({ default: (ctx: Context) => { reads.set(id, ctx.use(token)) } }) })),
+    ] })
+
+    await until(() => ["one", "two"].every(id => reads.get(id)?.().status === "active"))
+
+    const owners = ["one", "two"].map(id => {
+      const value = reads.get(id)?.()
+
+      return value?.status === "active" && value.value()
+    })
+
+    host.unmount()
+
+    return owners
+  }, fixture)
+
+  expect(result).toEqual(["one", "two"])
+})
+
 story("a contract component reads its provider context and preserves reactive props", async ({ page }) => {
   const result = await page.evaluate(async (fixture) => {
     const { bindPlugin, createComponent, createSignal, Contract, mountPlugins, Slot, until, usePlugin } = await import(
@@ -1737,7 +1765,7 @@ story(
 
     expect(result).toEqual({
       // Alphabetical among the app's themes, not appended after them.
-      neighbors: ["Mercury", "Midnight", "Monokai"],
+      neighbors: ["Mercury", "Midnight", "Modus"],
       withdrawn: { listed: false, selected: "oc-2", stored: "acme:midnight" },
       restored: "acme:midnight",
     })

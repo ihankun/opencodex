@@ -22,7 +22,10 @@ import { Persist, persisted } from "@/runtime/persistence/storage"
 import { rawTime } from "@/runtime/server/data"
 import { ServerConnection, useServers } from "@/runtime/server/registry"
 import { useGlobal, type ServerCtx } from "@/runtime/server/runtime"
+import { createSessionExporter } from "@/session/commands/export-session"
 import { sessionTreeIDs } from "@/session/requests/session-request-tree"
+import { SessionCopyMenu } from "@/session/session-copy-menu"
+import { SessionReadMenuItem } from "@/session/session-read-menu-item"
 import { errorMessage } from "@/shell/layout/helpers"
 import { sessionStatus, useSessionTabAvatarState } from "@/shell/layout/project-avatar-state"
 import { projectSettingsKey, useSettings } from "@/settings/model"
@@ -1047,7 +1050,12 @@ export function RecentSessions(
                   reorderPinned(arrayMove(visible, source.initialIndex, source.index))
                 }}
               >
-                <div data-titlebar-tab-list data-orientation="vertical" class="flex w-full min-w-0 flex-col">
+                <div
+                  data-titlebar-tab-list
+                  data-focus-scope
+                  data-orientation="vertical"
+                  class="flex w-full min-w-0 flex-col"
+                >
                   <Key each={pinned()} by={(item) => item.key}>
                     {(item, index) => row(item, index)}
                   </Key>
@@ -1078,6 +1086,7 @@ export function RecentSessions(
                       collapsible={arrangement().groupBy !== "none"}
                       collapsed={collapsed(group())}
                       mark={hiddenMark(group())}
+                      hoverReveal={settings.appearance.navigationPrototype()}
                       onToggle={() => toggleGroup(group().key)}
                       menu={
                         <RecentViewMenu
@@ -1088,7 +1097,12 @@ export function RecentSessions(
                       }
                     />
                     <Show when={shownRows(group()).length > 0}>
-                      <div data-titlebar-tab-list data-orientation="vertical" class="flex w-full min-w-0 flex-col">
+                      <div
+                        data-titlebar-tab-list
+                        data-focus-scope
+                        data-orientation="vertical"
+                        class="flex w-full min-w-0 flex-col"
+                      >
                         <Key each={shownRows(group())} by={(item) => item.key}>
                           {(item) => row(item)}
                         </Key>
@@ -1098,7 +1112,12 @@ export function RecentSessions(
                 )}
               </Key>
               <Show when={windowed().hasMore && !loadingMore()}>
-                <Button variant="ghost-muted" size="normal" class="w-full justify-start px-2" onClick={showMore}>
+                <Button
+                  variant="ghost-muted"
+                  size="normal"
+                  class="w-full justify-start px-2 focus-visible:-outline-offset-2"
+                  onClick={showMore}
+                >
                   {language.t("sidebar.inbox.showMore")}
                 </Button>
               </Show>
@@ -1107,13 +1126,23 @@ export function RecentSessions(
           <Show when={!input.organize && (recent().length > 0 || windowed().hasMore)}>
             <div role="group" aria-labelledby="sidebar-recent-list" class="flex shrink-0 flex-col gap-2 pb-2.5">
               <SectionHeader id="sidebar-recent-list" label={language.t("sidebar.recent.section.recent")} />
-              <div data-titlebar-tab-list data-orientation="vertical" class="flex w-full min-w-0 flex-col">
+              <div
+                data-titlebar-tab-list
+                data-focus-scope
+                data-orientation="vertical"
+                class="flex w-full min-w-0 flex-col"
+              >
                 <Key each={recent()} by={(item) => item.key}>
                   {(item) => row(item)}
                 </Key>
               </div>
               <Show when={windowed().hasMore && !loadingMore()}>
-                <Button variant="ghost-muted" size="normal" class="w-full justify-start px-2" onClick={showMore}>
+                <Button
+                  variant="ghost-muted"
+                  size="normal"
+                  class="w-full justify-start px-2 focus-visible:-outline-offset-2"
+                  onClick={showMore}
+                >
                   {language.t("sidebar.inbox.showMore")}
                 </Button>
               </Show>
@@ -1150,6 +1179,8 @@ function GroupHeader(props: {
   collapsible: boolean
   collapsed: boolean
   mark: "attention" | "unread" | undefined
+  /** Shows the chevron only on hover or focus (Consolidated). */
+  hoverReveal: boolean
   onToggle: () => void
   menu: JSX.Element
 }) {
@@ -1170,7 +1201,7 @@ function GroupHeader(props: {
           type="button"
           id={props.id}
           aria-expanded={!props.collapsed}
-          class="flex h-6 min-w-0 flex-1 items-center gap-1 rounded-[6px] ps-2 pe-8 text-start text-[13px] leading-4 font-medium text-v2-text-text-muted hover:text-v2-text-text-base focus-visible:bg-v2-overlay-simple-overlay-hover focus-visible:outline-none"
+          class="group/toggle flex h-6 min-w-0 flex-1 items-center gap-1 rounded-[6px] ps-2 pe-8 text-start text-[13px] leading-4 font-medium text-v2-text-text-muted hover:text-v2-text-text-base focus-visible:-outline-offset-2"
           onClick={props.onToggle}
         >
           <span class="min-w-0 truncate">{props.label}</span>
@@ -1191,8 +1222,12 @@ function GroupHeader(props: {
           </Show>
           <Icon
             name="fill-triangle-down"
-            class="shrink-0 text-v2-icon-icon-muted transition-transform motion-reduce:transition-none"
-            classList={{ "-rotate-90 rtl:rotate-90": props.collapsed }}
+            class="shrink-0 text-v2-icon-icon-muted transition-[transform,opacity] motion-reduce:transition-none"
+            classList={{
+              "-rotate-90 rtl:rotate-90": props.collapsed,
+              "opacity-0 group-hover/header:opacity-100 group-focus-visible/toggle:opacity-100 [@media(hover:none)]:opacity-100":
+                props.hoverReveal,
+            }}
           />
         </button>
       </Show>
@@ -1214,7 +1249,7 @@ function SectionHeader(props: { id: string; label: string }) {
   )
 }
 
-type RecentSessionTabProps = {
+export type RecentSessionTabProps = {
   item: () => RecentSession
   selected: () => boolean
   shortcut: () => number | undefined
@@ -1264,7 +1299,7 @@ function PinnedSessionRow(props: RecentSessionTabProps & { index: () => number }
 }
 
 // Renders the session as the side tabs do, from the same status, with the Recent menu and no close actions.
-function RecentSessionTab(props: RecentSessionTabProps & { dragging?: boolean }) {
+export function RecentSessionTab(props: RecentSessionTabProps & { dragging?: boolean }) {
   const global = useGlobal()
   const language = useLanguage()
 
@@ -1297,13 +1332,28 @@ function RecentSessionTab(props: RecentSessionTabProps & { dragging?: boolean })
     onCleanup(() => window.clearTimeout(timer))
   })
 
+  const exporter = createSessionExporter()
+
+  const exportTarget = () => ({ server: server(), sessionID: item().session.id })
+
   const menu = (rename: () => void) => (
     <>
+      <Menu.Item onSelect={rename}>{language.t("common.rename")}</Menu.Item>
       <Show
         when={props.pinned}
         fallback={<Menu.Item onSelect={props.onPin}>{language.t("sidebar.recent.pin")}</Menu.Item>}
       >
         <Menu.Item onSelect={props.onUnpin}>{language.t("sidebar.recent.unpin")}</Menu.Item>
+      </Show>
+      <SessionReadMenuItem server={server()} session={item().session} />
+      <Menu.Item onSelect={() => global.sessionPreferences.update("muted", server(), item().session.id, !muted())}>
+        {language.t(muted() ? "sidebar.recent.unmute" : "sidebar.recent.mute")}
+      </Menu.Item>
+      <Menu.Item onSelect={() => global.sessionPreferences.update("hidden", server(), item().session.id, true)}>
+        {language.t("sidebar.recent.hide")}
+      </Menu.Item>
+      <Show when={props.pinned}>
+        <Menu.Separator />
         <Menu.Item disabled={!props.canMoveUp()} onSelect={props.onMoveUp}>
           {language.t("sidebar.recent.moveUp")}
         </Menu.Item>
@@ -1311,16 +1361,13 @@ function RecentSessionTab(props: RecentSessionTabProps & { dragging?: boolean })
           {language.t("sidebar.recent.moveDown")}
         </Menu.Item>
       </Show>
-      <Menu.Item onSelect={() => global.sessionPreferences.update("muted", server(), item().session.id, !muted())}>
-        {language.t(muted() ? "sidebar.recent.unmute" : "sidebar.recent.mute")}
-      </Menu.Item>
-      <Menu.Item onSelect={() => global.sessionPreferences.update("hidden", server(), item().session.id, true)}>
-        {language.t("sidebar.recent.hide")}
+      <Menu.Separator />
+      <SessionCopyMenu server={server()} session={item().session} />
+      <Menu.Item disabled={exporter.exporting(exportTarget())} onSelect={() => exporter.export(exportTarget())}>
+        {language.t("common.export")}…
       </Menu.Item>
       <Menu.Separator />
-      <Menu.Item onSelect={rename}>{language.t("common.rename")}</Menu.Item>
       <Menu.Item onSelect={props.onArchive}>{language.t("common.archive")}</Menu.Item>
-      <Menu.Separator />
       <Menu.Item onSelect={props.onDelete}>{language.t("common.delete")}…</Menu.Item>
     </>
   )

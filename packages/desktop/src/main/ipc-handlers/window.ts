@@ -2,10 +2,13 @@ import { app, BrowserWindow, systemPreferences } from "electron"
 import { Effect } from "effect"
 import { WindowRpcs } from "../../shared/ipc-rpc"
 import { IpcPortHandoff } from "../ipc-transport"
+import { Toasts } from "../notifications"
 import {
   getPinchZoomEnabled,
   getWindowEffect,
   setPinchZoomEnabled,
+  setTaskbarBadge,
+  setTaskbarProgress,
   setTitlebar,
   setTrafficLightsPosition,
   setWindowEffect,
@@ -14,6 +17,7 @@ import {
   updateTitlebar,
 } from "../windows"
 import { storedZoomLevel } from "../windows/defaults"
+import { requestAttention } from "../windows/attention"
 import { focusWindow, showWindow } from "../windows/focus"
 import { sender } from "./context"
 
@@ -22,6 +26,8 @@ export const windowHandlers = WindowRpcs.toLayer(
     const handoff = yield* IpcPortHandoff
 
     return WindowRpcs.of({
+      WindowRequestAttention: (_args, context) =>
+        Effect.promise(() => requestAttention(BrowserWindow.fromWebContents(sender(handoff, context)))),
       WindowRequestMicrophone: () =>
         Effect.promise(() =>
           process.platform === "darwin" ? systemPreferences.askForMediaAccess("microphone") : Promise.resolve(true),
@@ -72,6 +78,21 @@ export const windowHandlers = WindowRpcs.toLayer(
 
           if (win) setTrafficLightsPosition(win, position)
         }),
+      WindowSetTaskbarBadge: ({ count, description }, context) =>
+        Effect.sync(() => {
+          const win = BrowserWindow.fromWebContents(sender(handoff, context))
+
+          if (win) setTaskbarBadge(win, count, description)
+        }),
+      WindowSetTaskbarProgress: ({ mode }, context) =>
+        Effect.sync(() => {
+          const win = BrowserWindow.fromWebContents(sender(handoff, context))
+
+          if (win) setTaskbarProgress(win, mode)
+        }),
+      WindowShowToast: ({ tag, ...input }, context) =>
+        Effect.sync(() => Toasts.show(sender(handoff, context), tag, input)),
+      WindowDismissToast: ({ tag }) => Effect.sync(() => Toasts.dismiss(tag)),
     })
   }),
 )

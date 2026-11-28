@@ -6,6 +6,7 @@ import {
   settingsSchema,
   settingsPersistence,
   defaultSettings,
+  questionComposerAvailable,
   recentSessionsAvailable,
   resolveSidebarOrganize,
   monoDefault,
@@ -46,6 +47,7 @@ describe("settings schema", () => {
         showSearch: true,
         experimentalBrowser: false,
         showProjectIcon: true,
+        focusRing: "muted",
         releaseNotes: false,
         mobileDiffWrap: false,
       },
@@ -57,6 +59,7 @@ describe("settings schema", () => {
     expect(settings.general).not.toHaveProperty("showStatus")
     expect(settings.general).not.toHaveProperty("experimentalBrowser")
     expect(settings.general).not.toHaveProperty("showProjectIcon")
+    expect(settings.general).not.toHaveProperty("focusRing")
     expect(settings.appearance).not.toHaveProperty("showProjectName")
 
     const copied = (value: typeof settings) => ({
@@ -99,10 +102,10 @@ describe("settings schema", () => {
         timelineWidth: "comfortable",
         foldUserMessages: false,
         wrapCodeBlocks: false,
-        newQuestionUI: false,
         sidebarOrganize: "list",
         mobileTitlebarPosition: "top",
         followUpBehavior: "steer",
+        questionSubmitKey: "enter",
       },
       appearance: {
         fontSize: 14,
@@ -155,9 +158,10 @@ describe("settings schema", () => {
         releaseNotes: undefined,
         reasoningMode: 3,
         followUpBehavior: "invalid",
+        questionSubmitKey: "invalid",
         backgroundActivity: "invalid",
         timelineWidth: "invalid",
-        newQuestionUI: "invalid",
+        questionComposer: "invalid",
         sidebarOrganize: "off",
       },
       appearance: { fontSize: "large", mono: "Custom Mono", tabLayout: "vertical", showProjectName: true },
@@ -173,9 +177,9 @@ describe("settings schema", () => {
       autoSave: false,
       timelineDetail: timelinePresets[2].value,
       followUpBehavior: "steer",
+      questionSubmitKey: "enter",
       backgroundActivity: "left",
       timelineWidth: "comfortable",
-      newQuestionUI: false,
       sidebarOrganize: "list",
     })
     expect(settings.appearance).toEqual({
@@ -222,14 +226,18 @@ describe("settings schema", () => {
   })
 })
 
+test.each(["local", "dev", "beta", "prod", undefined] as const)("question composer availability in %s", (channel) => {
+  expect(questionComposerAvailable(channel)).toBe(channel === "local" || channel === "dev")
+})
+
 test.each(["local", "dev", "beta", "prod", undefined] as const)("Recent availability in %s", (channel) => {
   expect(recentSessionsAvailable("desktop", channel)).toBe(channel === "local" || channel === "dev")
   expect(recentSessionsAvailable("web", channel)).toBe(false)
 })
 
-test("font defaults are Inter and IBM Plex Mono", () => {
+test("font defaults are Inter and OpenMono", () => {
   expect(sansDefault).toBe("Inter")
-  expect(monoDefault).toBe("IBM Plex Mono")
+  expect(monoDefault).toBe("OpenMono")
 })
 
 test.each([
@@ -237,11 +245,11 @@ test.each([
   { name: "sans", family: sansFontFamily, font: "", prefix: '"Inter", ' },
   { name: "sans", family: sansFontFamily, font: "   ", prefix: '"Inter", ' },
   { name: "sans", family: sansFontFamily, font: "Custom Sans", prefix: '"Custom Sans", "Inter", ' },
-  { name: "mono", family: monoFontFamily, font: undefined, prefix: '"IBM Plex Mono", ' },
-  { name: "mono", family: monoFontFamily, font: "", prefix: '"IBM Plex Mono", ' },
-  { name: "mono", family: monoFontFamily, font: "   ", prefix: '"IBM Plex Mono", ' },
-  { name: "mono", family: monoFontFamily, font: "Custom Mono", prefix: '"Custom Mono", "IBM Plex Mono", ' },
-  { name: "terminal", family: terminalFontFamily, font: undefined, prefix: '"JetBrainsMono Nerd Font Mono", ' },
+  { name: "mono", family: monoFontFamily, font: undefined, prefix: '"OpenMono", ' },
+  { name: "mono", family: monoFontFamily, font: "", prefix: '"OpenMono", ' },
+  { name: "mono", family: monoFontFamily, font: "   ", prefix: '"OpenMono", ' },
+  { name: "mono", family: monoFontFamily, font: "Custom Mono", prefix: '"Custom Mono", "OpenMono", ' },
+  { name: "terminal", family: terminalFontFamily, font: undefined, prefix: '"OpenMono", ' },
 ])("$name font family for $font starts with $prefix", ({ family, font, prefix }) => {
   expect(family(font)).toStartWith(prefix)
 })

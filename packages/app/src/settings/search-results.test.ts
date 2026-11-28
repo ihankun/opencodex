@@ -18,6 +18,7 @@ function index(input: Partial<Parameters<typeof settingsSearchIndex>[0]> = {}) {
     servers,
     selected: "local",
     desktop: false,
+    linux: false,
     browser: false,
     mobile: false,
     windowEffects: false,
@@ -60,6 +61,8 @@ describe("settings search index", () => {
     expect(targets({ desktop: true })).toContain("settings-zoom")
     expect(targets({ desktop: true })).not.toContain("settings-window-effects")
     expect(targets({ desktop: true, windowEffects: true })).toContain("settings-window-effects")
+    expect(targets({ desktop: true })).not.toContain("settings-smooth-scrolling")
+    expect(targets({ desktop: true, linux: true })).toContain("settings-smooth-scrolling")
     expect(targets({ browser: true })).not.toContain("settings-experimental-browser")
     expect(targets({})).not.toContain("settings-show-project-icon")
     expect(targets({})).not.toContain("settings-mobile-titlebar-bottom")
@@ -82,9 +85,9 @@ describe("settings search index", () => {
       page: "Preferences / Timeline",
       view: { tab: "general", target: "settings-fold-user-messages" },
     })
-    expect(rankSettings("new question UI", items)[0].view).toMatchObject({
+    expect(rankSettings("new timeline", items)[0].view).toMatchObject({
       tab: "experimental",
-      target: "settings-new-question-ui",
+      target: "settings-new-timeline",
     })
     expect(rankSettings("capsule", items)[0].view).toMatchObject({
       tab: "general",
@@ -116,9 +119,7 @@ describe("settings search ranking", () => {
 
   test("qualifies project settings by project name on the selected server", () => {
     expect(rankSettings("opencode name", index()).map((item) => item.view.target)).toEqual(["settings-project-name"])
-    expect(rankSettings("opencode name", index({ selected: "remote" })).map((item) => item.server)).toEqual([
-      "remote",
-    ])
+    expect(rankSettings("opencode name", index({ selected: "remote" })).map((item) => item.server)).toEqual(["remote"])
     expect(rankSettings("opencode skills", index()).map((item) => item.view.subtab)).toEqual(["skills"])
   })
 

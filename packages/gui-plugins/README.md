@@ -301,22 +301,22 @@ const status = {
 
 ### Registries
 
-| Registry                                             | Process | What an item is                                                                                                                                                                                                                      |
-| ---------------------------------------------------- | ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| [`Command`](../plugin/src/gui/registries.ts)         | window  | A palette command with an optional keybind and slash command                                                                                                                                                                         |
-| [`MenuItem`](../plugin/src/gui/registries.ts)        | window  | An item of a host menu: the side panel + menu, Add server, a server row                                                                                                                                                              |
-| [`Panel`](../plugin/src/gui/registries.ts)           | window  | Tabs in the session's side region                                                                                                                                                                                                    |
-| [`SettingsPage`](../plugin/src/gui/registries.ts)    | window  | A settings page, a section on a host page, or rows in a host section                                                                                                                                                                 |
-| [`Server`](../plugin/src/gui/registries.ts)          | window  | A source of servers, such as SSH hosts                                                                                                                                                                                               |
-| [`LinkHandler`](../plugin/src/gui/registries.ts)     | window  | Opens local links, such as file paths in messages, and says whether their target exists                                                                                                                                              |
-| [`TitlebarItem`](../plugin/src/gui/registries.ts)    | window  | A pill in the titlebar or the tabs footer                                                                                                                                                                                            |
-| [`ComposerPill`](../plugin/src/gui/registries.ts)    | window  | A pill in the row above a session's composer, optionally opening a menu of rows or a popover of your own content                                                                                                                     |
-| [`CodeBlock`](../plugin/src/gui/registries.ts)       | window  | Your UI in place of the highlighted code of complete fenced code blocks of the languages you list, such as a diagram or a table                                                                                                      |
-| [`CodeBlockAction`](../plugin/src/gui/registries.ts) | window  | A button beside the Copy button of complete fenced code blocks of the languages you list, such as "Run in terminal"                                                                                                                  |
-| [`Slot`](../plugin/src/gui/registries.ts)            | window  | Content for `window.bottom`, `session.header`, `session.location.menu`, `session.panel.end`; built-ins also fill `session.location.workspace`, `session.location.branch.menu` and `session.location.path.menu` through `BuiltinSlot` |
-| [`Style`](../plugin/src/gui/registries.ts)           | window  | CSS imported with `?inline`                                                                                                                                                                                                          |
-| [`Theme`](../plugin/src/gui/registries.ts)           | window  | A color theme in the app's theme file format, listed in Settings › Appearance › Theme                                                                                                                                                |
-| [`MenubarItem`](../plugin/src/gui/main.ts)           | main    | An item of the native app menu                                                                                                                                                                                                       |
+| Registry                                             | Process | What an item is                                                                                                                                                                                                                                                                     |
+| ---------------------------------------------------- | ------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [`Command`](../plugin/src/gui/registries.ts)         | window  | A palette command with an optional keybind and slash command                                                                                                                                                                                                                        |
+| [`MenuItem`](../plugin/src/gui/registries.ts)        | window  | An item of a host menu: the side panel + menu, Add server, a server row                                                                                                                                                                                                             |
+| [`Panel`](../plugin/src/gui/registries.ts)           | window  | Tabs in the session's side region                                                                                                                                                                                                                                                   |
+| [`SettingsPage`](../plugin/src/gui/registries.ts)    | window  | A settings page, a section on a host page, or rows in a host section                                                                                                                                                                                                                |
+| [`Server`](../plugin/src/gui/registries.ts)          | window  | A source of servers, such as SSH hosts                                                                                                                                                                                                                                              |
+| [`LinkHandler`](../plugin/src/gui/registries.ts)     | window  | Opens local links, such as file paths in messages, and says whether their target exists                                                                                                                                                                                             |
+| [`TitlebarItem`](../plugin/src/gui/registries.ts)    | window  | A pill in the titlebar or the tabs footer                                                                                                                                                                                                                                           |
+| [`ComposerPill`](../plugin/src/gui/registries.ts)    | window  | A pill in the row above a session's composer, optionally opening a menu of rows or a popover of your own content                                                                                                                                                                    |
+| [`CodeBlock`](../plugin/src/gui/registries.ts)       | window  | Your UI in place of the highlighted code of complete fenced code blocks of the languages you list, such as a diagram or a table                                                                                                                                                     |
+| [`CodeBlockAction`](../plugin/src/gui/registries.ts) | window  | A button beside the Copy button of complete fenced code blocks of the languages you list, such as "Run in terminal"                                                                                                                                                                 |
+| [`Slot`](../plugin/src/gui/registries.ts)            | window  | Content for `window.bottom`, `session.header`, `session.location.menu`, `session.panel.end`; built-ins also fill `session.location.workspace`, `session.location.branch.menu`, `session.location.path.menu`, `session.panel.new` and `session.panel.new.list` through `BuiltinSlot` |
+| [`Style`](../plugin/src/gui/registries.ts)           | window  | CSS imported with `?inline`                                                                                                                                                                                                                                                         |
+| [`Theme`](../plugin/src/gui/registries.ts)           | window  | A color theme in the app's theme file format, listed in Settings › Appearance › Theme                                                                                                                                                                                               |
+| [`MenubarItem`](../plugin/src/gui/main.ts)           | main    | An item of the native app menu                                                                                                                                                                                                                                                      |
 
 `session.location.menu` contributes items after the project menu's location details. It receives the owning `screen`,
 the live `session`, and `shown`; keep data subscriptions active only while `shown` is true. Loading headers without an
@@ -373,6 +373,19 @@ to the displayed repository or worktree instead of adding a second menu item.
 | `ctx.embeds` (main)          | `Embeds`                                                                           | `create(view, window)` places a web page                         |
 | `ctx.cli` (main)             | `Cli`                                                                              | The opencode CLI the app runs                                    |
 
+### Contracts
+
+The contracts `file`, `review` and `browser` publish with the SDK as `@opencode/plugin/gui/<name>`. Read one with `ctx.use`.
+
+The desktop `Browser` contract (`@opencode/plugin/gui/browser`) can return a handle to a new tab in the session on screen:
+`const id = await browser.experimental.open(session, url)`, then `await browser.experimental.close(id)` from the same
+plugin instance. Experimental: may change without compatibility guarantees. `experimental.open` resolves once the tab
+exists, also while its page still loads or after its load failed, which the tab itself shows; it rejects, and leaves no
+tab, when the address opened no page. The branded handle survives a session rebind.
+It ends with the plugin instance or the window, when the person clicks or types in the tab or runs a command on it, and
+when the agent uses the tab. `close` returns true only for a tab closed now; a page that asks "Leave site?" stays open.
+`open(session, url)` stays fire-and-forget.
+
 ### Built-in only
 
 `@opencode/plugin/gui/builtin` holds what only the built-ins use. It is never published and is not in the modules a plugin bundle may require; a public SDK module never imports it.
@@ -382,8 +395,10 @@ to the displayed repository or worktree instead of adding a second menu item.
 | `onIdle(fn)`                                            | Runs work while the main thread is idle, e.g. a lazy chunk's preload                           |
 | `BuiltinPanel`, `BuiltinPanelTab`                       | `legacy` stored keys of a panel; `first` and stable `dom` ids of a tab                         |
 | `BuiltinCommand`                                        | `follows`: share another command's shortcut inside `scope`                                     |
+| `BuiltinAppLink`                                        | Review a person's activation of an application link in the desktop conversation                |
+| `BuiltinPromptGate`                                     | Work the host waits for, for at most one second, before it sends a prompt or a command         |
 | `BuiltinStore`, `BuiltinStoreFrom`                      | Window stores imported from parts of the app's own keys                                        |
-| `builtinContext(ctx)`                                   | `ctx.desktop.forceFocus`, `ctx.locale.setDirection`                                            |
+| `builtinContext(ctx)`                                   | `ctx.desktop.forceFocus`, `ctx.locale.setDirection`, `ctx.provideFor` for per-consumer contracts |
 | `builtinMainContext(ctx)`, `MainStoreFrom`, `Lifecycle` | Main stores imported from settings files or other namespaces, and `lifecycle.restart(handoff)` |
 | `builtinCatalog(catalog)`, `BuiltinCatalog`             | Locales other than English as loaders, loaded when the user picks the locale                   |
 

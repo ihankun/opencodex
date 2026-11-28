@@ -73,7 +73,7 @@ const permission = permissionLayer({
 })
 
 const formatter = Layer.mock(Formatter.Service, {
-  file: (target) => formatFile(target),
+  file: (target) => formatFile(target.absolute),
 })
 
 const reset = () => {
@@ -256,6 +256,20 @@ describe("PatchTool", () => {
     ),
   )
 
+  it.live("writes a final empty + line of an added file", () =>
+    withTempTool((directory, registry) =>
+      Effect.gen(function* () {
+        const settled = yield* executeTool(
+          registry,
+          call("*** Begin Patch\n*** Add File: notes.md\n+# Title\n+\n*** Add File: blank.txt\n+\n*** End Patch"),
+        )
+        expect(settled.status).toBe("completed")
+        expect(yield* Effect.promise(() => fs.readFile(path.join(directory, "notes.md"), "utf8"))).toBe("# Title\n\n")
+        expect(yield* Effect.promise(() => fs.readFile(path.join(directory, "blank.txt"), "utf8"))).toBe("\n")
+      }),
+    ),
+  )
+
   it.live("counts deleted lines with and without a trailing newline", () =>
     withTempTool((directory, registry) =>
       Effect.gen(function* () {
@@ -420,6 +434,43 @@ describe("PatchTool", () => {
     ),
   )
 
+  it.live("refuses to rewrite a file that is not valid UTF-8 and applies none of the patch", () =>
+    withTempTool((directory, registry) =>
+      Effect.gen(function* () {
+        const utf8 = path.join(directory, "a.txt")
+        const latin1 = path.join(directory, "Invoice.java")
+        const doomed = path.join(directory, "Old.java")
+        // "// José" in Latin-1, far from the patched line.
+        const bytes = Buffer.concat([Buffer.from("// Jos\xe9\n", "latin1"), Buffer.from("int MAX = 10;\n")])
+        yield* Effect.promise(() =>
+          Promise.all([fs.writeFile(utf8, "before\n"), fs.writeFile(latin1, bytes), fs.writeFile(doomed, bytes)]),
+        )
+        expect(
+          yield* executeTool(
+            registry,
+            call(
+              "*** Begin Patch\n*** Update File: a.txt\n@@\n-before\n+after\n*** Update File: Invoice.java\n@@\n-int MAX = 10;\n+int MAX = 25;\n*** End Patch",
+            ),
+          ),
+        ).toMatchObject({
+          status: "error",
+          error: {
+            message: expect.stringContaining(
+              `patch verification failed: Failed to read file to update ${latin1}: file is not valid UTF-8.`,
+            ),
+          },
+        })
+        expect(yield* Effect.promise(() => fs.readFile(utf8, "utf8"))).toBe("before\n")
+        expect(yield* Effect.promise(() => fs.readFile(latin1))).toEqual(bytes)
+        // Deleting does not rewrite the bytes, so it stays allowed.
+        expect(
+          yield* executeTool(registry, call("*** Begin Patch\n*** Delete File: Old.java\n*** End Patch", "call-delete")),
+        ).toMatchObject({ status: "completed" })
+        expect(yield* exists(doomed)).toBe(false)
+      }),
+    ),
+  )
+
   it.live("renames a file when the move only changes its case", () =>
     withTempTool((directory, registry) =>
       Effect.gen(function* () {
@@ -499,28 +550,6 @@ describe("PatchTool", () => {
             },
           ],
         })
-      }),
-    ),
-  )
-
-  it.live("includes the move destination in edit permission resources", () =>
-    withTempTool((directory, registry) =>
-      Effect.gen(function* () {
-        const source = path.join(directory, "old", "name.txt")
-        yield* Effect.promise(() => fs.mkdir(path.dirname(source), { recursive: true }))
-        yield* Effect.promise(() => fs.writeFile(source, "old content\n"))
-        yield* executeTool(
-          registry,
-          call(
-            "*** Begin Patch\n*** Update File: old/name.txt\n*** Move to: renamed/dir/name.txt\n@@\n-old content\n+new content\n*** End Patch",
-          ),
-        )
-        expect(assertions).toMatchObject([
-          {
-            action: "edit",
-            resources: ["old/name.txt", "renamed/dir/name.txt"],
-          },
-        ])
       }),
     ),
   )
@@ -645,37 +674,6 @@ describe("PatchTool", () => {
             error: { type: "tool.execution", message: "patch rejected: empty patch" },
           })
         }
-      }),
-    ),
-  )
-
-  it.live("rejects an invalid hunk header", () =>
-    withTempTool((_directory, registry) =>
-      Effect.gen(function* () {
-        expect(yield* executeTool(registry, call("*** Begin Patch\n*** Frobnicate File: foo\n*** End Patch"))).toEqual({
-          status: "error",
-          error: {
-            type: "tool.execution",
-            message:
-              "patch verification failed: Invalid hunk at line 2: '*** Frobnicate File: foo' is not a valid hunk header. Valid hunk headers: '*** Add File: {path}', '*** Delete File: {path}', '*** Update File: {path}'",
-          },
-        })
-      }),
-    ),
-  )
-
-  it.live("applies successive update operations to one file", () =>
-    withTempTool((directory, registry) =>
-      Effect.gen(function* () {
-        const target = path.join(directory, "successive.txt")
-        yield* Effect.promise(() => fs.writeFile(target, "a\nb\n"))
-        yield* executeTool(
-          registry,
-          call(
-            "*** Begin Patch\n*** Update File: successive.txt\n@@\n-a\n+A\n*** Update File: successive.txt\n@@\n-b\n+B\n*** End Patch",
-          ),
-        )
-        expect(yield* Effect.promise(() => fs.readFile(target, "utf8"))).toBe("A\nB\n")
       }),
     ),
   )

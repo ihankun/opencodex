@@ -3,12 +3,14 @@ import { Match, Switch } from "solid-js"
 import { AssistantTextContent } from "../../message/message-content"
 import {
   currentToolError,
+  currentToolImages,
   currentToolInput,
   currentToolMetadata,
   currentToolOutput,
 } from "../../message/current-tool-state"
 import type { TurnSources } from "../../sources/sources"
-import { toolRule, toolStopped } from "../rules"
+import { toolRule } from "../rules"
+import { toolStopped } from "../../timeline/facts"
 import { ThoughtRow } from "./thought"
 import { ToolDisplay } from "./tool-display"
 
@@ -49,8 +51,7 @@ export function AssistantContent(props: {
       <Match when={props.content.type === "reasoning" ? props.content : undefined}>
         {(content) => (
           <ThoughtRow
-            id={props.contentID}
-            content={content()}
+            parts={[{ ...content(), id: props.contentID }]}
             streaming={false}
             defaultOpen={props.reasoningDefaultOpen}
             open={props.toolOpen}
@@ -67,6 +68,7 @@ export function AssistantContent(props: {
             input={currentToolInput(tool())}
             metadata={currentToolMetadata(tool())}
             output={currentToolOutput(tool())}
+            images={currentToolImages(tool())}
             status={tool().state.status}
             error={currentToolError(tool())}
             stopped={toolStopped(tool())}

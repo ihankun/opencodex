@@ -18,6 +18,7 @@ import { sessionTreeIDs } from "@/session/requests/session-request-tree"
 import { sessionLabel } from "@/session/title"
 import { createSessionExporter } from "@/session/commands/export-session"
 import { createSessionRenamer } from "@/session/commands/rename-session"
+import { SessionCopyMenu } from "@/session/session-copy-menu"
 import { SessionReadMenuItem } from "@/session/session-read-menu-item"
 import { notifySessionTabsRemoved } from "./session-events"
 import {
@@ -134,7 +135,7 @@ export function ProjectSessionRow(props: {
         type="button"
         data-titlebar-tab-action
         data-state={props.active ? "pressed" : undefined}
-        class="relative flex h-7 w-full shrink-0 items-center gap-2 rounded-[6px] ps-8 pe-2 text-start text-[13px] leading-[var(--line-height-compact)] font-medium focus-visible:outline-none"
+        class="relative flex h-7 w-full shrink-0 items-center gap-2 rounded-[6px] ps-8 pe-2 text-start text-[13px] leading-[var(--line-height-compact)] font-medium"
         classList={{ "text-v2-text-text-base": props.active, "text-v2-text-text-faint": !props.active }}
         aria-current={props.active ? "page" : undefined}
         title={sessionLabel(props.session)}
@@ -213,13 +214,15 @@ export function ProjectSessionRow(props: {
           >
             {language.t("common.rename")}
           </Menu.Item>
+          <SessionReadMenuItem server={props.server} session={props.session} />
+          <Menu.Separator />
+          <SessionCopyMenu server={props.server} session={props.session} />
           <Menu.Item
             disabled={!ctx() || exporter.exporting(exportTarget())}
             onSelect={() => exporter.export(exportTarget())}
           >
             {language.t("common.export")}…
           </Menu.Item>
-          <SessionReadMenuItem server={props.server} session={props.session} />
           <Menu.Separator />
           <Menu.Item disabled={!ctx()} onSelect={() => dialog.show(() => <DeleteDialog />)}>
             {language.t("common.delete")}…

@@ -3,6 +3,7 @@ import { App } from "@opencode/core/app"
 import { Artifact } from "@opencode/core/artifact"
 import { BlobStore } from "@opencode/core/blob-store"
 import { AISDK } from "@opencode/core/aisdk"
+import { Automation } from "@opencode/core/automation"
 import { Command } from "@opencode/core/command"
 import { Config } from "@opencode/core/config"
 import { Credential } from "@opencode/core/credential"
@@ -26,11 +27,13 @@ import { KV } from "@opencode/core/kv"
 import { Location } from "@opencode/core/location"
 import { Mcp } from "@opencode/core/mcp/index"
 import { Model } from "@opencode/core/model"
+import { ModelsDev } from "@opencode/core/models-dev"
 import { Npm } from "@opencode/util/npm"
 import { Plugin } from "@opencode/core/plugin"
 import { PluginHooks } from "@opencode/core/plugin/hooks"
 import { Provider } from "@opencode/core/provider"
 import { Session } from "@opencode/core/session"
+import { SessionInbox } from "@opencode/core/session/inbox"
 import { SharedCache } from "@opencode/core/shared-cache"
 import { InstructionEntry } from "@opencode/core/session/instruction-entry"
 import { PersistentPty } from "@opencode/core/persistent-pty"
@@ -60,6 +63,8 @@ const npmLayer = Layer.succeed(
     resolve: (name) => Effect.succeed({ directory: "", name }),
     check: () => Effect.succeed(false),
     update: (name) => Effect.succeed({ directory: "", name }),
+    follows: () => Effect.succeed(false),
+    reject: () => Effect.succeed(false),
     which: () => Effect.undefined,
   }),
 )
@@ -97,7 +102,11 @@ const permissionLayer = Layer.succeed(
   }),
 )
 
-export const makePluginTestLayer = (permission = permissionLayer, generate = generateLayer) =>
+export const makePluginTestLayer = (
+  permission = permissionLayer,
+  generate = generateLayer,
+  replacements: LayerNode.Replacements = [],
+) =>
   AppNodeBuilder.build(
     LayerNode.group([
       App.node,
@@ -121,15 +130,18 @@ export const makePluginTestLayer = (permission = permissionLayer, generate = gen
       Agent.node,
       Artifact.node,
       AISDK.node,
+      Automation.node,
       BlobStore.node,
       Provider.node,
       Model.node,
+      ModelsDev.node,
       Command.node,
       InstructionDiscovery.node,
       Integration.node,
       Job.node,
       KV.node,
       Mcp.node,
+      SessionInbox.node,
       Session.node,
       SharedCache.node,
       InstructionEntry.node,
@@ -157,6 +169,7 @@ export const makePluginTestLayer = (permission = permissionLayer, generate = gen
       Generate.node.replace(generate),
       Permission.node.replace(permission),
       offlineModels,
+      ...replacements,
     ],
   ).pipe(Layer.provideMerge(configLayer))
 

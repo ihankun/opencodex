@@ -6,7 +6,9 @@ import { isDeepStrictEqual } from "node:util"
 import { applyEdits, modify, type ParseError, parse } from "jsonc-parser"
 import { Context, Effect, FiberMap, Layer, Option, PubSub, Ref, Schema, Semaphore, Stream } from "effect"
 import { Directory, Document, Info, type Patch, type Entry, Event } from "@opencode/schema/config"
+import { App } from "./app.js"
 import { Credential } from "./credential.js"
+import { FlagResolve } from "./flag/resolve.js"
 import { Bus } from "./bus.js"
 import { Watcher } from "./filesystem/watcher.js"
 import { FSUtil } from "@opencode/util/fs-util"
@@ -29,6 +31,8 @@ export function latest<K extends keyof Info>(entries: readonly Entry[], key: K):
   return entries.findLast((entry): entry is Document => entry.type === "document" && entry.info[key] !== undefined)
     ?.info[key]
 }
+
+export type IntegrationResult = ConfigIntegration.IntegrationResult
 
 export interface Interface {
   /** Returns location config documents and discovery sources from lowest to highest priority. */
@@ -54,7 +58,7 @@ export interface Interface {
   readonly integration?: (
     integrationID: ConfigIntegration.Document["integrationID"],
     document: ConfigIntegration.Document | undefined,
-  ) => Effect.Effect<void>
+  ) => Effect.Effect<IntegrationResult>
 }
 
 export const Options = Schema.Struct({
@@ -110,7 +114,13 @@ export const testLayer = (
             const next = new Map(current)
             next.delete(integrationID)
             return document ? next.set(integrationID, document) : next
-          }),
+          }).pipe(
+            Effect.andThen(Ref.get(integrations)),
+            Effect.map((documents): IntegrationResult => {
+              const document = documents.get(integrationID)
+              return document ? { _tag: "Applied", document } : { _tag: "Cleared" }
+            }),
+          ),
       })
       return Context.empty().pipe(Context.add(Service, service), Context.add(Test, service))
     }),
@@ -128,6 +138,8 @@ export const layer = (options?: Options) =>
       const globalService = yield* Global.Service
       const wellknown = yield* WellKnown.Service
       const processes = yield* AppProcess.Service
+      const app = yield* App.Service
+      const overrides = yield* FlagResolve.Overrides
       const integrations = new Map<string, ConfigIntegration.Document>()
       // Integrations set their documents from outside this layer, so their reloads run with its services.
       const context = yield* Effect.context<FSUtil.Service | Global.Service | Location.Service>()
@@ -148,10 +160,10 @@ export const layer = (options?: Options) =>
           return
         }
         const result = ConfigNormalize.normalize(input)
-        // Every reload repeats the routine notes on a config that loads. A rejected config or a dropped malformed
-        // setting is the user's to fix, so those stay warnings.
+        // Every reload repeats routine notes. Rejected configs and dropped malformed or removed settings need a warning.
         yield* Effect.forEach(result.diagnostics, (diagnostic) => {
-          const log = result.type === "rejected" || diagnostic.kind === "invalid" ? Effect.logWarning : Effect.logDebug
+          const warn = result.type === "rejected" || diagnostic.kind === "invalid" || diagnostic.kind === "removed"
+          const log = warn ? Effect.logWarning : Effect.logDebug
           return log("configuration normalization diagnostic", {
             source,
             path: diagnostic.path[0] === "$" ? "$" : `$.${diagnostic.path.join(".")}`,
@@ -187,13 +199,15 @@ export const layer = (options?: Options) =>
         // Logging out drops the saved remote config, so the source supplies nothing until a fresh fetch succeeds.
         if (!variables) return yield* wellknown.clearCached(entry.origin).pipe(Effect.as([]))
         // A failed refresh keeps the last resolved config so remote providers and allowlists do not disappear.
-        const configs = yield* wellknown.resolve(entry, variables).pipe(
-          Effect.catch((error) =>
-            Effect.logWarning("failed to load wellknown config", { source: entry.origin, error }).pipe(
-              Effect.andThen(wellknown.cached(entry.origin)),
+        const configs = yield* wellknown
+          .resolve(entry, variables)
+          .pipe(
+            Effect.catch((error) =>
+              Effect.logWarning("failed to load wellknown config", { source: entry.origin, error }).pipe(
+                Effect.andThen(wellknown.cached(entry.origin)),
+              ),
             ),
-          ),
-        )
+          )
         return yield* Effect.forEach(configs, (config) =>
           ConfigVariable.substitute({
             type: "virtual",
@@ -353,11 +367,7 @@ export const layer = (options?: Options) =>
         const lockdown = ManagedPolicy.statements(managedPolicies)
         const integrated = yield* Effect.forEach(integrations.values(), (document) =>
           supplies(lockdown, document.integrationID, document.connection).pipe(
-            Effect.map((allowed) =>
-              allowed
-                ? document
-                : new ConfigIntegration.Document({ ...document, info: new Info({ policies: document.info.policies }) }),
-            ),
+            Effect.map((allowed) => ConfigIntegration.result(document, allowed)),
           ),
         )
         const wellknownDocuments = yield* Effect.forEach(yield* loadWellknown(references).pipe(Effect.orDie), (entry) =>
@@ -375,25 +385,37 @@ export const layer = (options?: Options) =>
             ),
           ),
         )
+        const below = [
+          ...managedPolicies,
+          ...integrated.map((result) => result.document),
+          ...wellknownDocuments.flat(),
+          ...globalSupplementary,
+          ...explicit,
+          ...direct,
+          ...projectSupplementary,
+        ]
+        const above = [...content, ...managedSettings]
+        // Config can't read the Flag service, which reads Config, so it resolves project_overlay from everything but
+        // the overlay itself.
+        const overlay = FlagResolve.resolve({ entries: [...below, ...above], channel: app.channel, overrides })
+          .project_overlay.enabled
+          ? yield* ConfigDiscovery.overlay(options)
+          : undefined
+        const effective = overlay ? { ...sources, project: [...sources.project, overlay] } : sources
         return {
+          integrationResults: new Map(integrated.map((result) => [result.document.integrationID, result])),
           configs: [
-            ...managedPolicies,
-            ...integrated,
-            ...wellknownDocuments.flat(),
-            ...globalSupplementary,
-            ...explicit,
-            ...direct,
-            ...projectSupplementary,
-            ...content,
-            ...managedSettings,
+            ...below,
+            ...(overlay?.present ? yield* loadDirectory(overlay.path, references).pipe(Effect.orDie) : []),
+            ...above,
           ],
-          isInput: yield* ConfigWatch.inputs(sources, references),
+          sources: effective,
+          isInput: yield* ConfigWatch.inputs(effective, references),
         }
       })
 
       const initial = yield* ConfigDiscovery.discover(options)
-      let sources = initial
-      let { configs, isInput } = yield* load(initial)
+      let { configs, isInput, sources, integrationResults } = yield* load(initial)
       const updates = yield* PubSub.unbounded<Watcher.Update>()
       const reloads = yield* PubSub.sliding<void>(1)
       // Readiness rescans recover writes made before a watch attached.
@@ -427,22 +449,21 @@ export const layer = (options?: Options) =>
         }
       })
 
-      const reload = Effect.fn("Config.reload")(
-        function* () {
-          const discovered = yield* ConfigDiscovery.discover(options)
-          const next = yield* load(discovered)
-          isInput = next.isInput
-          yield* reconcile(discovered)
-          const compatibilityChanged =
-            !isDeepStrictEqual(sources.claude, discovered.claude) ||
-            !isDeepStrictEqual(sources.agents, discovered.agents)
-          if (isDeepStrictEqual(configs, next.configs) && !compatibilityChanged) return
-          sources = discovered
-          configs = next.configs
-          yield* bus.publish(Event.Updated, {})
-        },
-        (effect) => reloadLock.withPermit(effect),
-      )
+      const reloadUnlocked = Effect.fn("Config.reload")(function* () {
+        const next = yield* load(yield* ConfigDiscovery.discover(options))
+        isInput = next.isInput
+        integrationResults = next.integrationResults
+        yield* reconcile(next.sources)
+        const compatibilityChanged =
+          !isDeepStrictEqual(sources.claude, next.sources.claude) ||
+          !isDeepStrictEqual(sources.agents, next.sources.agents)
+        if (isDeepStrictEqual(configs, next.configs) && !compatibilityChanged) return
+        sources = next.sources
+        configs = next.configs
+        yield* bus.publish(Event.Updated, {})
+      })
+
+      const reload = () => reloadLock.withPermit(reloadUnlocked())
 
       // Subscribe eagerly so synchronous watch readiness isn't dropped.
       const pendingReloads = yield* PubSub.subscribe(reloads)
@@ -490,7 +511,7 @@ export const layer = (options?: Options) =>
         Effect.forever,
         Effect.forkScoped({ startImmediately: true }),
       )
-      yield* reloadLock.withPermit(reconcile(initial))
+      yield* reloadLock.withPermit(reconcile(sources))
 
       const update = Effect.fn("Config.update")(
         function* (patch: Patch) {
@@ -526,15 +547,32 @@ export const layer = (options?: Options) =>
           }),
         changes: () => Stream.fromPubSub(updates),
         update,
-        integration: Effect.fn("Config.integration")(function* (integrationID, document) {
-          if (isDeepStrictEqual(integrations.get(integrationID), document)) return
-          integrations.delete(integrationID)
-          if (document) integrations.set(integrationID, document)
-          yield* reload().pipe(
-            Effect.provide(context),
-            Effect.catchCause((cause) => Effect.logError("failed to reload config", { cause })),
-          )
-        }),
+        integration: Effect.fn("Config.integration")(
+          function* (integrationID, document) {
+            if (!isDeepStrictEqual(integrations.get(integrationID), document)) {
+              const previous = integrations.get(integrationID)
+              integrations.delete(integrationID)
+              if (document) integrations.set(integrationID, document)
+              const failed = yield* reloadUnlocked().pipe(
+                Effect.provide(context),
+                Effect.as(false),
+                Effect.catchCause((cause) =>
+                  Effect.logError("failed to reload integration config", { integrationID, cause }).pipe(
+                    Effect.as(true),
+                  ),
+                ),
+              )
+              if (failed) {
+                integrations.delete(integrationID)
+                if (previous) integrations.set(integrationID, previous)
+                // Fail closed with a stripped policies-only document so a failed reload never registers denied providers.
+                return document ? ConfigIntegration.result(document, false) : { _tag: "Cleared" as const }
+              }
+            }
+            return integrationResults.get(integrationID) ?? { _tag: "Cleared" as const }
+          },
+          (effect) => reloadLock.withPermit(effect),
+        ),
       })
     }),
   )
@@ -552,6 +590,7 @@ export function configured(options?: Options) {
       Credential.node,
       WellKnown.node,
       AppProcess.node,
+      App.node,
     ],
   })
 }

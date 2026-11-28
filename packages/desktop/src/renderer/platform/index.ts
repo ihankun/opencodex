@@ -5,6 +5,7 @@ import { setWindowEffect, windowEffect, windowEffectOptions } from "../window/ef
 import { windowFullscreen } from "../window/fullscreen"
 import { DragCancelEvent } from "../../shared/ipc-transport"
 import { createPluginBridge } from "../plugins"
+import { onDeepLinks } from "../startup/deep-links"
 import { createDesktopFiles } from "./files"
 import { createDesktopMenuAction } from "./menu"
 import { createDesktopNotify } from "./notifications"
@@ -29,7 +30,9 @@ export function createDesktopPlatform(api: ElectronAPI, windowState: DesktopWind
     setForceFocus: (enabled) => api.setForceFocus(enabled),
     recordFatalRendererError: (error) => api.recordFatalRendererError(error),
     restart: async () => api.relaunch(),
-    notify: createDesktopNotify(api),
+    ...createDesktopNotify(api, os),
+    onSystemResume: (callback) => api.onSystemResumed(callback),
+    requestAttention: () => api.requestAttention(),
     fetch: (input, init) => {
       if (input instanceof Request) return fetch(input)
 
@@ -49,6 +52,11 @@ export function createDesktopPlatform(api: ElectronAPI, windowState: DesktopWind
     setPinchZoomEnabled,
     getSpellcheckEnabled: () => api.getSpellcheckEnabled(),
     setSpellcheckEnabled: (enabled) => api.setSpellcheckEnabled(enabled),
+    getSmoothScrollingEnabled: () => api.getSmoothScrollingEnabled(),
+    setSmoothScrollingEnabled: (enabled) => api.setSmoothScrollingEnabled(enabled),
+    getKeepServiceRunning: () => api.getKeepServiceRunning(),
+    setKeepServiceRunning: (enabled) => api.setKeepServiceRunning(enabled),
+    onDeepLinks,
     onDragCancel: (callback) => {
       window.addEventListener(DragCancelEvent, callback)
 
